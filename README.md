@@ -80,19 +80,40 @@ There are two ways to stop the server:
 
 ## Testing
 
-### Integration Tests
+The project has a comprehensive test suite including unit tests, integration tests, and frontend tests.
 
-Run integration tests against a running server:
+### Running Tests
+
+To run the unit tests:
 ```bash
-python test_integration.py
+./run_tests.sh
 ```
 
-### Frontend Tests
-
-Test the user interface with Playwright:
+To run all tests including integration and frontend tests:
 ```bash
-pytest test_frontend.py -v
+./run_tests.sh --with-integration
 ```
+
+Alternatively, you can use pytest directly:
+```bash
+# Run all unit tests
+pytest tests/
+
+# Run a specific test file
+pytest tests/test_clip_detector.py
+
+# Run with verbose output
+pytest tests/ -v
+
+# Run only tests with a specific marker
+pytest -m "not integration" tests/
+```
+
+### Test Types
+
+- **Unit Tests**: Test individual components in isolation
+- **Integration Tests**: Test the API endpoints with a running server
+- **Frontend Tests**: Test the user interface with Playwright
 
 ## How It Works
 

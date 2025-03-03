@@ -112,8 +112,6 @@ def capture_and_process(args):
                     frame_data = processor.process_frame(frame)
                     processing_time = time.time() - start_time
                     
-                    print(f"Frame processed in {processing_time:.2f} seconds")
-                    
                     # If the queue is full, remove the old frame
                     if frame_queue.full():
                         try:
