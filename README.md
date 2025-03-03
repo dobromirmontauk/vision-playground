@@ -49,7 +49,13 @@ Start the server with:
 # Run with default YOLO detector
 ./run_server.sh
 
-# Or specify a detector model
+# Run with CLIP detector
+./run_clip_detector.sh
+
+# Run with CLIP detector on Apple Silicon GPU (M1/M2/M3)
+./run_with_mps.sh
+
+# Or specify a detector model and options directly
 python app.py --model yolo  # Use YOLO detector
 python app.py --model clip  # Use CLIP detector
 
@@ -59,6 +65,16 @@ python app.py --model clip --categories person car dog chair  # Specific categor
 ```
 
 This will start the Flask application on http://localhost:5000 (or custom port if specified)
+
+### Using GPU Acceleration
+
+On Apple Silicon Macs (M1/M2/M3), you can use GPU acceleration for the CLIP detector:
+
+1. Ensure you have PyTorch 2.5.0+ installed with MPS support
+2. Run the application with `./run_with_mps.sh`
+3. Check the logs to verify that MPS acceleration is being used
+
+This significantly improves performance for the CLIP detector.
 
 ### Stopping the Server
 

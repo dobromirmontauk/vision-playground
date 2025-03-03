@@ -77,9 +77,16 @@ class CLIPDetector(ObjectDetector):
         # Initialize CLIP model - don't silence output for debugging 
         try:
             print("Initializing CLIP model...")
-            # Ensure we're using the right device (CPU or GPU if available)
-            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            print(f"Using device: {device}")
+            # Check for available devices - prioritize MPS for Apple Silicon
+            if torch.backends.mps.is_available():
+                device = torch.device("mps")
+                print(f"Using Apple Silicon GPU via MPS: {device}")
+            elif torch.cuda.is_available():
+                device = torch.device("cuda")
+                print(f"Using NVIDIA GPU: {device}")
+            else:
+                device = torch.device("cpu")
+                print(f"Using CPU: {device}")
             
             self.clip_model, _, self.clip_preprocess = open_clip.create_model_and_transforms(
                 self.clip_model_name,
@@ -195,8 +202,15 @@ class CLIPDetector(ObjectDetector):
                     
                     # Convert crop to PIL and preprocess for CLIP
                     crop_pil = Image.fromarray(crop)
-                    crop_tensor = self.clip_preprocess(crop_pil).unsqueeze(0).to(self.device)
-                    print(f"  Preprocessed tensor shape: {crop_tensor.shape}")
+                    # Use a try-except block in case of any MPS-specific tensor issues
+                    try:
+                        crop_tensor = self.clip_preprocess(crop_pil).unsqueeze(0).to(self.device)
+                        print(f"  Preprocessed tensor shape: {crop_tensor.shape}")
+                    except Exception as e:
+                        print(f"  Error processing tensor on {self.device}: {e}")
+                        # Fall back to CPU if there's a device-specific error
+                        crop_tensor = self.clip_preprocess(crop_pil).unsqueeze(0).to("cpu")
+                        print(f"  Falling back to CPU tensor with shape: {crop_tensor.shape}")
                     
                     # Get CLIP image features
                     with torch.no_grad():
