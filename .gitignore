@@ -1,0 +1,27 @@
+# Virtual environment
+venv/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# YOLOv8 model files (will be downloaded automatically)
+*.pt
+
+# Environment variables
+.env
+
+# IDE files
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Runtime artifacts
+server.pid
+static/saved_boxes/
+
+# Mac specific
+.DS_Store

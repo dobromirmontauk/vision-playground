@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Detections</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 2rem;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .card-img {
+            width: 100%;
+            height: 200px;
+            object-fit: contain;
+            background-color: #f5f5f5;
+        }
+        .card-body {
+            padding: 1rem;
+        }
+        .card-title {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.1rem;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+        }
+        .badge-original {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .badge-new {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .badge-confidence {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .nav-links {
+            text-align: center;
+            margin: 2rem 0;
+        }
+        .nav-links a {
+            display: inline-block;
+            margin: 0 1rem;
+            padding: 0.5rem 1rem;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .nav-links a:hover {
+            background-color: #0056b3;
+        }
+        .shutdown-btn {
+            background-color: #dc3545 !important;
+        }
+        .shutdown-btn:hover {
+            background-color: #bd2130 !important;
+        }
+        #confirmShutdown {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+        .confirm-dialog {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            width: 300px;
+            text-align: center;
+        }
+        .confirm-buttons {
+            margin-top: 15px;
+        }
+        .confirm-buttons button {
+            padding: 8px 15px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .confirm-yes {
+            background-color: #dc3545;
+            color: white;
+        }
+        .confirm-no {
+            background-color: #6c757d;
+            color: white;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .notification.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <h1>Saved Detections</h1>
+    
+    <div class="nav-links">
+        <a href="{{ url_for('index') }}">Back to Live Feed</a>
+        <a href="#" id="shutdownButton" class="shutdown-btn">Quit Server</a>
+    </div>
+    
+    {% if items %}
+    <div class="grid">
+        {% for item in items %}
+        <div class="card" id="card-{{ loop.index }}">
+            <img src="{{ url_for('static', filename='saved_boxes/' + item.filename) }}" alt="{{ item.original_class }}" class="card-img">
+            <div class="card-body">
+                <h3 class="card-title">Detection #{{ loop.index }}</h3>
+                <div>
+                    <span class="badge badge-original">Original: {{ item.original_class }}</span>
+                    <span class="badge badge-confidence">Confidence: {{ item.confidence }}</span>
+                    {% if item.new_label %}
+                    <span class="badge badge-new">New Label: {{ item.new_label }}</span>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="new-label-{{ loop.index }}">New Label:</label>
+                    <input type="text" id="new-label-{{ loop.index }}" placeholder="Enter correct label" value="{{ item.new_label or '' }}">
+                </div>
+                <button onclick="updateLabel('{{ item.filename }}', {{ loop.index }})">Save Label</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h2>No saved detections yet</h2>
+        <p>When you find misrecognized objects, click the "Fix" button to save them here.</p>
+    </div>
+    {% endif %}
+    
+    <div id="notification" class="notification"></div>
+    
+    <div id="confirmShutdown">
+        <div class="confirm-dialog">
+            <h3>Confirm Shutdown</h3>
+            <p>Are you sure you want to shut down the server?</p>
+            <div class="confirm-buttons">
+                <button class="confirm-yes" id="confirmYes">Yes, Shut Down</button>
+                <button class="confirm-no" id="confirmNo">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function updateLabel(filename, index) {
+            const newLabel = document.getElementById(`new-label-${index}`).value.trim();
+            
+            if (!newLabel) {
+                showNotification('Please enter a label', 'error');
+                return;
+            }
+            
+            fetch('/api/update_label', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    filename: filename,
+                    new_label: newLabel
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Label updated successfully');
+                    
+                    // Update the badge
+                    const card = document.getElementById(`card-${index}`);
+                    const badges = card.querySelectorAll('.badge-new');
+                    
+                    if (badges.length > 0) {
+                        badges[0].textContent = `New Label: ${newLabel}`;
+                    } else {
+                        const badgeContainer = card.querySelector('.card-body div');
+                        const newBadge = document.createElement('span');
+                        newBadge.className = 'badge badge-new';
+                        newBadge.textContent = `New Label: ${newLabel}`;
+                        badgeContainer.appendChild(newBadge);
+                    }
+                } else {
+                    showNotification(data.message || 'Failed to update label', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Error updating label', 'error');
+            });
+        }
+        
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = 'notification show';
+            
+            if (type === 'error') {
+                notification.style.backgroundColor = '#f44336';
+            } else {
+                notification.style.backgroundColor = '#4CAF50';
+            }
+            
+            setTimeout(() => {
+                notification.className = 'notification';
+            }, 3000);
+        }
+        
+        // Shutdown functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const shutdownButton = document.getElementById('shutdownButton');
+            const confirmShutdown = document.getElementById('confirmShutdown');
+            const confirmYes = document.getElementById('confirmYes');
+            const confirmNo = document.getElementById('confirmNo');
+            
+            // Handle shutdown button click
+            shutdownButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                confirmShutdown.style.display = 'flex';
+            });
+            
+            // Handle confirmation dialog responses
+            confirmYes.addEventListener('click', function() {
+                // Call the shutdown API
+                fetch('/api/shutdown', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Server is shutting down...', 'success');
+                        // Display a full page message
+                        document.body.innerHTML = `
+                            <div style="text-align: center; padding: 100px 20px;">
+                                <h1>Server is shutting down</h1>
+                                <p>The server is shutting down. You can close this window.</p>
+                                <p>Camera resources are being released. This may take a few seconds.</p>
+                            </div>
+                        `;
+                    } else {
+                        showNotification('Failed to shut down server: ' + data.message, 'error');
+                        confirmShutdown.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Error shutting down server', 'error');
+                    confirmShutdown.style.display = 'none';
+                });
+            });
+            
+            confirmNo.addEventListener('click', function() {
+                confirmShutdown.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>

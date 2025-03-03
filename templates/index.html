@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOLO Object Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        .video-container {
+            position: relative;
+            margin-top: 2rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border-radius: 4px;
+            max-width: 100%;
+            height: auto;
+            display: inline-block;
+        }
+        .video-feed {
+            width: 100%;
+            max-width: 1024px;
+            height: auto;
+        }
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        .info {
+            margin-top: 2rem;
+            text-align: left;
+            background-color: #f9f9f9;
+            padding: 1rem;
+            border-radius: 4px;
+        }
+        .stats-container {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+            text-align: left;
+        }
+        .stats {
+            margin: 0;
+            padding: 0.5rem;
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .notification.show {
+            opacity: 1;
+        }
+        .nav-links {
+            margin-top: 1rem;
+        }
+        .nav-links a {
+            display: inline-block;
+            margin: 0 1rem;
+            padding: 0.5rem 1rem;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .nav-links a:hover {
+            background-color: #0056b3;
+        }
+        .shutdown-btn {
+            background-color: #dc3545 !important;
+        }
+        .shutdown-btn:hover {
+            background-color: #bd2130 !important;
+        }
+        #confirmShutdown {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+        .confirm-dialog {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            width: 300px;
+            text-align: center;
+        }
+        .confirm-buttons {
+            margin-top: 15px;
+        }
+        .confirm-buttons button {
+            padding: 8px 15px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .confirm-yes {
+            background-color: #dc3545;
+            color: white;
+        }
+        .confirm-no {
+            background-color: #6c757d;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>YOLO Object Detection Stream</h1>
+    
+    <div class="video-container">
+        <img class="video-feed" src="{{ url_for('video_feed') }}" alt="Video Stream">
+        <div class="video-overlay" id="videoOverlay"></div>
+    </div>
+    
+    <div class="stats-container">
+        <p class="stats" id="statsDisplay">Loading stats...</p>
+    </div>
+    
+    <div class="nav-links">
+        <a href="{{ url_for('saved_detections') }}">View Saved Detections</a>
+        <a href="#" id="shutdownButton" class="shutdown-btn">Quit Server</a>
+    </div>
+    
+    <div class="info">
+        <h2>About</h2>
+        <p>This application uses a webcam to detect objects in real-time using the YOLOv8 model.</p>
+        <p>Objects are identified with bounding boxes and labeled with their class name and confidence score.</p>
+        <p>Click on the "Fix" button next to any misrecognized object to save it for relabeling.</p>
+    </div>
+    
+    <div id="notification" class="notification"></div>
+    
+    <div id="confirmShutdown">
+        <div class="confirm-dialog">
+            <h3>Confirm Shutdown</h3>
+            <p>Are you sure you want to shut down the server?</p>
+            <div class="confirm-buttons">
+                <button class="confirm-yes" id="confirmYes">Yes, Shut Down</button>
+                <button class="confirm-no" id="confirmNo">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const overlay = document.getElementById('videoOverlay');
+            const notification = document.getElementById('notification');
+            const statsDisplay = document.getElementById('statsDisplay');
+            const shutdownButton = document.getElementById('shutdownButton');
+            const confirmShutdown = document.getElementById('confirmShutdown');
+            const confirmYes = document.getElementById('confirmYes');
+            const confirmNo = document.getElementById('confirmNo');
+            let videoRect = null;
+            
+            // Get video dimensions
+            function updateVideoDimensions() {
+                const videoElement = document.querySelector('.video-feed');
+                videoRect = videoElement.getBoundingClientRect();
+            }
+            
+            // Update dimensions when loaded and on resize
+            window.addEventListener('resize', updateVideoDimensions);
+            const videoElement = document.querySelector('.video-feed');
+            videoElement.addEventListener('load', updateVideoDimensions);
+            
+            // Initially set dimensions
+            updateVideoDimensions();
+            
+            // Show a notification
+            function showNotification(message, type = 'success') {
+                notification.textContent = message;
+                notification.className = 'notification show';
+                if (type === 'error') {
+                    notification.style.backgroundColor = '#f44336';
+                } else {
+                    notification.style.backgroundColor = '#4CAF50';
+                }
+                
+                setTimeout(() => {
+                    notification.className = 'notification';
+                }, 3000);
+            }
+            
+            // Handle click on the video overlay
+            overlay.addEventListener('click', function(e) {
+                if (!videoRect) return;
+                
+                // Calculate click position relative to the video
+                const x = e.clientX - videoRect.left;
+                const y = e.clientY - videoRect.top;
+                
+                // For a quick test, let's always use detection ID 0 for now
+                // In a real implementation, we would determine which detection's "Fix" button was clicked
+                // based on the coordinates and knowledge of where the buttons are rendered
+                
+                fetch('/api/fix_detection', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ id: 0 }), // Always use the first detection for testing
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message);
+                    } else {
+                        showNotification(data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Error saving detection', 'error');
+                });
+            });
+            
+            // Update stats periodically
+            function updateStats() {
+                fetch('/api/stats')
+                    .then(response => response.json())
+                    .then(data => {
+                        statsDisplay.textContent = `FPS: ${data.fps} | Processing Time: ${data.median_time} ms (median), ${data.max_time} ms (max)`;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching stats:', error);
+                    });
+            }
+            
+            // Update stats every second
+            setInterval(updateStats, 1000);
+            
+            // Initial stats update
+            updateStats();
+            
+            // Handle shutdown button click
+            shutdownButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                confirmShutdown.style.display = 'flex';
+            });
+            
+            // Handle confirmation dialog responses
+            confirmYes.addEventListener('click', function() {
+                // Call the shutdown API
+                fetch('/api/shutdown', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Server is shutting down...', 'success');
+                        // Display a full page message
+                        document.body.innerHTML = `
+                            <div style="text-align: center; padding: 100px 20px;">
+                                <h1>Server is shutting down</h1>
+                                <p>The server is shutting down. You can close this window.</p>
+                                <p>Camera resources are being released. This may take a few seconds.</p>
+                            </div>
+                        `;
+                    } else {
+                        showNotification('Failed to shut down server: ' + data.message, 'error');
+                        confirmShutdown.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Error shutting down server', 'error');
+                    confirmShutdown.style.display = 'none';
+                });
+            });
+            
+            confirmNo.addEventListener('click', function() {
+                confirmShutdown.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>
