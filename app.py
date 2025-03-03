@@ -29,7 +29,7 @@ app = Flask(__name__)
 os.makedirs('static/saved_boxes', exist_ok=True)
 
 # Global variables
-frame_queue = queue.Queue(maxlen=1)
+frame_queue = queue.Queue(maxsize=1)  # queue.Queue uses maxsize, not maxlen
 shutdown_event = threading.Event()
 frame_processor = None  # Will be set in the capture_and_process function
 
