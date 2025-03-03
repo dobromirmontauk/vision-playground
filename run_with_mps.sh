@@ -8,8 +8,7 @@ export PYTORCH_ENABLE_MPS_FALLBACK=1
 
 # Run the application with the CLIP detector on MPS (Apple Silicon GPU)
 echo "Starting application with CLIP detector on Apple Silicon GPU..."
-echo "Using 1000 household items categories from data file..."
-python app.py --model clip --max-categories 1000 > server.log 2>&1 &
+python app.py --model clip --max-categories=10000 --categories-file=data/categories/child_recognizable_items.txt --confidence 0.8 > server.log 2>&1 &
 
 # Store the PID
 echo $! > server.pid
