@@ -3,7 +3,7 @@
 This application performs real-time object detection from your webcam and displays the results through an interactive web interface. It supports multiple detection models:
 
 - **YOLO**: Fast object detection using YOLOv8
-- **CLIP**: Zero-shot object classification using OpenAI's CLIP model
+- **CLIP**: Zero-shot object classification using OpenAI's CLIP model (supports 1000+ household item categories)
 
 ## Features
 
@@ -62,6 +62,8 @@ python app.py --model clip  # Use CLIP detector
 # Additional options
 python app.py --model clip --confidence 0.4 --port 8080
 python app.py --model clip --categories person car dog chair  # Specific categories for CLIP
+python app.py --model clip --categories-file path/to/categories.txt  # Load categories from file
+python app.py --model clip --max-categories 100  # Limit number of categories
 ```
 
 This will start the Flask application on http://localhost:5000 (or custom port if specified)

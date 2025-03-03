@@ -44,7 +44,7 @@ class CLIPDetector(ObjectDetector):
         self.detector_model_name = detector_model_name
         self.confidence_threshold = confidence_threshold
         
-        # Default categories if none provided
+        # Use provided categories or COCO categories as fallback
         self.categories = categories or [
             "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", 
             "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", 
@@ -59,6 +59,9 @@ class CLIPDetector(ObjectDetector):
             "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", 
             "toothbrush"
         ]
+        
+        # Log the number of categories
+        print(f"CLIP detector initialized with {len(self.categories)} categories")
         
         # Format categories for CLIP
         self.category_texts = [f"a photo of a {category}" for category in self.categories]

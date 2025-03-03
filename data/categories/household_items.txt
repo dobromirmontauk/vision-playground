@@ -1,0 +1,1101 @@
+sofa
+couch
+coffee table
+ottoman
+end table
+recliner
+armchair
+bookshelf
+tv stand
+television
+lamp
+floor lamp
+table lamp
+chandelier
+ceiling fan
+curtains
+drapes
+blinds
+rug
+carpet
+hardwood floor
+tile floor
+vacuum cleaner
+broom
+mop
+dustpan
+trash can
+garbage bin
+recycling bin
+compost bin
+microwave
+refrigerator
+freezer
+stove
+oven
+toaster
+toaster oven
+blender
+food processor
+mixer
+coffee maker
+espresso machine
+kettle
+tea pot
+slow cooker
+pressure cooker
+air fryer
+rice cooker
+waffle maker
+electric grill
+dishwasher
+dish rack
+cutting board
+knife
+chef's knife
+paring knife
+bread knife
+butcher knife
+cleaver
+knife block
+knife sharpener
+utensil holder
+spatula
+wooden spoon
+whisk
+tongs
+ladle
+slotted spoon
+can opener
+bottle opener
+corkscrew
+measuring cups
+measuring spoons
+mixing bowls
+colander
+strainer
+grater
+peeler
+potato masher
+garlic press
+rolling pin
+baking sheet
+muffin tin
+cake pan
+loaf pan
+pie dish
+casserole dish
+Dutch oven
+frying pan
+saucepan
+stockpot
+wok
+griddle
+grill pan
+pepper mill
+salt shaker
+spice rack
+kitchen timer
+kitchen scale
+trivet
+oven mitts
+pot holders
+apron
+dish towel
+paper towel holder
+kitchen trash can
+dining table
+dining chair
+bar stool
+high chair
+sideboard
+buffet
+china cabinet
+dinnerware set
+plates
+bowls
+mugs
+drinking glasses
+wine glasses
+champagne flutes
+shot glasses
+water pitcher
+serving tray
+serving bowl
+gravy boat
+salt and pepper shakers
+napkin holder
+place mats
+coasters
+candlesticks
+table runner
+tablecloth
+silverware
+cutlery
+flatware
+knives
+forks
+spoons
+tea set
+coffee set
+bed
+mattress
+box spring
+bed frame
+headboard
+footboard
+night stand
+bedside table
+dresser
+chest of drawers
+wardrobe
+armoire
+closet organizer
+shoe rack
+hangers
+coat rack
+mirror
+vanity
+bedroom bench
+comforter
+duvet
+duvet cover
+quilt
+blanket
+throw blanket
+electric blanket
+sheets
+fitted sheet
+flat sheet
+pillow
+pillow cases
+pillow shams
+bed skirt
+mattress pad
+mattress topper
+mattress protector
+alarm clock
+humidifier
+air purifier
+fan
+space heater
+desk
+office chair
+computer desk
+filing cabinet
+bookcase
+bookshelves
+desk lamp
+desk organizer
+pencil cup
+letter tray
+waste basket
+paper shredder
+desktop computer
+laptop
+keyboard
+mouse
+mouse pad
+monitor
+printer
+scanner
+phone
+desk phone
+cell phone
+tablet
+e-reader
+charger
+power strip
+surge protector
+extension cord
+router
+modem
+wifi extender
+speakers
+headphones
+webcam
+microphone
+bulletin board
+whiteboard
+calendar
+clock
+wall clock
+art
+wall art
+painting
+print
+poster
+photograph
+sculpture
+vase
+decorative bowl
+candle
+candle holder
+diffuser
+essential oil diffuser
+air freshener
+artificial plant
+potted plant
+planter
+succulent
+cactus
+flower arrangement
+flower vase
+flower pot
+terrarium
+wall decor
+tapestry
+wall hanging
+wall mirror
+decorative mirror
+accent table
+plant stand
+fireplace
+fireplace tools
+fireplace screen
+mantel
+hearth
+throw pillow
+decorative pillow
+cushion
+area rug
+welcome mat
+door mat
+shoe mat
+doorstop
+door hanger
+wreath
+entry table
+console table
+key holder
+key hook
+umbrella stand
+coat stand
+magazine rack
+magazine holder
+bookends
+photo frame
+picture frame
+album
+scrapbook
+memorabilia box
+shadow box
+display case
+curio cabinet
+display shelf
+floating shelf
+wall shelf
+corner shelf
+shelving unit
+storage bin
+storage basket
+storage box
+storage ottomans
+storage bench
+trunk
+chest
+toy box
+toy chest
+toy organizer
+play mat
+children's table
+children's chair
+kids' desk
+kids' lamp
+crib
+bassinet
+changing table
+baby monitor
+baby mobile
+baby swing
+stroller
+high chair
+booster seat
+playpen
+baby gate
+diaper pail
+diaper bag
+baby bathtub
+baby toiletries
+baby toys
+children's books
+board games
+playing cards
+dice
+puzzle
+jigsaw puzzle
+crossword puzzle
+video game console
+video game controller
+game cartridge
+DVD
+Blu-ray
+CD
+vinyl record
+record player
+turntable
+cassette
+cassette player
+radio
+stereo
+audio receiver
+soundbar
+subwoofer
+musical instrument
+guitar
+piano
+keyboard (musical)
+drum set
+violin
+flute
+trumpet
+saxophone
+sheet music
+music stand
+metronome
+tuner
+instrument case
+instrument stand
+craft supplies
+sewing machine
+sewing kit
+knitting needles
+crochet hook
+yarn
+thread
+fabric
+scissors
+pinking shears
+fabric scissors
+rotary cutter
+cutting mat
+pins
+pin cushion
+measuring tape
+seam ripper
+thimble
+iron
+ironing board
+ironing board cover
+steamer
+starch
+laundry basket
+laundry hamper
+clothesline
+clothespins
+clothes hanger
+drying rack
+washing machine
+dryer
+detergent
+fabric softener
+dryer sheets
+stain remover
+bleach
+lint roller
+lint brush
+shoe polish
+shoe brush
+shoe horn
+toilet
+toilet brush
+toilet plunger
+toilet paper
+toilet paper holder
+bidet
+bathroom sink
+bathroom faucet
+bathroom vanity
+medicine cabinet
+shower
+shower head
+shower curtain
+shower rod
+shower caddy
+bathtub
+bath mat
+bath towel
+hand towel
+washcloth
+bath sheet
+beach towel
+bath pillow
+bath robe
+bath products
+bath sponge
+loofah
+soap dispenser
+soap dish
+toothbrush
+toothbrush holder
+toothpaste
+dental floss
+mouthwash
+shampoo
+conditioner
+body wash
+shower gel
+bath salts
+bath bomb
+bubble bath
+bath oil
+moisturizer
+lotion
+hairbrush
+comb
+hair dryer
+hair straightener
+curling iron
+hair spray
+hair gel
+hair mousse
+makeup
+makeup brushes
+makeup remover
+cotton balls
+cotton swabs
+tweezers
+nail clippers
+nail file
+eye drops
+contact lens solution
+razor
+shaving cream
+aftershave
+deodorant
+perfume
+cologne
+bathroom scale
+first aid kit
+band-aids
+gauze
+tape
+antibiotic ointment
+thermometer
+heating pad
+ice pack
+hot water bottle
+prescription medications
+over-the-counter medications
+vitamins
+supplements
+flashlight
+lantern
+candles
+matches
+lighter
+battery
+battery charger
+smoke detector
+carbon monoxide detector
+fire extinguisher
+fire alarm
+security system
+security camera
+door lock
+deadbolt
+key
+key ring
+window lock
+chain lock
+peephole
+doorbell
+intercom
+motion sensor
+light sensor
+timer
+smart home device
+smart speaker
+smart thermostat
+smart light bulb
+smart plug
+smart switch
+smart lock
+voice assistant
+TV remote
+universal remote
+streaming device
+HDMI cable
+USB cable
+power cable
+phone charger
+tablet charger
+laptop charger
+power bank
+surge protector
+extension cord
+multi-outlet adapter
+light switch
+dimmer switch
+outlet
+outlet cover
+outlet strip
+cable box
+antenna
+amplifier
+patio furniture
+outdoor table
+outdoor chair
+porch swing
+hammock
+adirondack chair
+picnic table
+grill
+barbecue
+smoker
+fire pit
+outdoor heater
+patio umbrella
+gazebo
+pergola
+trellis
+garden bench
+bird bath
+bird feeder
+bird house
+garden hose
+sprinkler
+watering can
+plant pot
+garden tools
+rake
+hoe
+shovel
+trowel
+pruning shears
+hedge trimmer
+lawn mower
+weed whacker
+string trimmer
+leaf blower
+snow blower
+snow shovel
+ice scraper
+de-icer
+salt spreader
+garden gloves
+kneeling pad
+tool shed
+storage shed
+garden cart
+wheelbarrow
+ladder
+step ladder
+extension ladder
+tool box
+tool kit
+drill
+screwdriver
+hammer
+saw
+wrench
+pliers
+tape measure
+level
+stud finder
+nail
+screw
+bolt
+nut
+washer
+glue
+duct tape
+electrical tape
+masking tape
+packing tape
+stapler
+staple gun
+paper
+notebook
+notepad
+sticky notes
+pen
+pencil
+marker
+highlighter
+eraser
+pencil sharpener
+scissors
+paper clips
+binder clips
+rubber bands
+tape dispenser
+stapler
+hole punch
+binder
+folder
+file box
+journal
+planner
+calendar
+ink
+printer paper
+cardstock
+envelope
+stamp
+paperweight
+clipboard
+ruler
+protractor
+calculator
+laptop stand
+laptop cooling pad
+phone stand
+tablet stand
+monitor stand
+desk pad
+mouse pad
+wrist rest
+foot rest
+back cushion
+seat cushion
+chair mat
+door frame
+window frame
+window sill
+window screen
+window shade
+shutters
+vertical blinds
+horizontal blinds
+cellular shades
+roman shades
+blackout curtains
+curtain rod
+curtain rings
+curtain tie-backs
+curtain holdbacks
+doorknob
+door handle
+cabinet knob
+cabinet handle
+drawer pull
+light fixture
+track lighting
+recessed lighting
+wall sconce
+pendant light
+chandelier
+floor lamp
+table lamp
+desk lamp
+reading lamp
+night light
+security light
+motion-sensor light
+solar light
+string lights
+holiday lights
+Christmas tree
+artificial Christmas tree
+Christmas ornaments
+holiday decorations
+seasonal decor
+Halloween decorations
+Easter decorations
+Thanksgiving decorations
+patriotic decorations
+party supplies
+balloons
+streamers
+confetti
+party favors
+birthday cake
+birthday candles
+greeting card
+gift wrap
+gift bag
+tissue paper
+ribbon
+bow
+tape
+scissors
+gift box
+gift card
+money envelope
+storage container
+food storage container
+meal prep container
+food storage bags
+plastic wrap
+aluminum foil
+parchment paper
+wax paper
+lunch box
+thermos
+water bottle
+travel mug
+ice cube tray
+wine rack
+beer glass
+champagne glass
+shot glass
+cocktail shaker
+cocktail strainer
+jigger
+wine opener
+bottle opener
+ice bucket
+wine chiller
+champagne bucket
+dish soap
+hand soap
+dishwasher detergent
+scrubber
+sponge
+steel wool
+dish brush
+drain stopper
+sink strainer
+garbage disposal
+paper plates
+paper cups
+plastic utensils
+napkins
+paper towels
+facial tissues
+toilet paper
+paper towel holder
+tissue box cover
+sewing basket
+pincushion
+sewing patterns
+fabric scissors
+dressmaker's dummy
+mannequin
+ironing board
+iron
+steamer
+lint roller
+clothes brush
+starch
+fabric softener
+mothballs
+cedar blocks
+shoe tree
+shoe stretcher
+shoe polish
+shoe shine kit
+boot jack
+shoe horn
+umbrella
+rain jacket
+rain boots
+snow boots
+gloves
+mittens
+scarf
+hat
+cap
+beanie
+winter coat
+rain coat
+coat hook
+scarf hanger
+hat rack
+shoe rack
+boot tray
+umbrella stand
+door mat
+welcome mat
+key hook
+mail sorter
+catchall
+coin jar
+piggy bank
+donation box
+recycling bin
+compost bin
+garden stake
+garden marker
+plant label
+watering can
+sprinkler
+garden hose
+hose reel
+planter
+hanging basket
+window box
+trellis
+garden arch
+pond
+water feature
+fountain
+pool
+hot tub
+sauna
+exercise equipment
+yoga mat
+foam roller
+resistance bands
+weights
+dumbbells
+kettlebells
+barbell
+weight bench
+treadmill
+exercise bike
+rowing machine
+elliptical
+stair stepper
+fitness tracker
+heart rate monitor
+stopwatch
+jump rope
+exercise ball
+balance board
+pull-up bar
+medicine ball
+punching bag
+boxing gloves
+gymnastics mat
+balance beam
+art supplies
+easel
+canvas
+paint
+paintbrush
+palette
+pottery wheel
+clay
+sculpting tools
+drawing pad
+sketch book
+drawing pencils
+colored pencils
+markers
+pastels
+chalk
+charcoal
+craft paper
+construction paper
+card stock
+scrapbook paper
+stickers
+glitter
+glue
+glue gun
+tape
+washi tape
+ribbon
+yarn
+string
+twine
+bead
+button
+sequin
+craft knife
+craft scissors
+needle
+pins
+safety pins
+velcro
+snaps
+buttons
+zippers
+thread
+embroidery thread
+embroidery hoop
+crochet hook
+knitting needle
+loom
+felting needle
+quilt frame
+sewing pattern
+measuring tape
+garment rack
+steam iron
+ironing board
+lint brush
+clothes brush
+fabric refresher
+lavender sachets
+cedar balls
+mothballs
+coat hanger
+padded hanger
+clip hanger
+pants hanger
+skirt hanger
+over-the-door hook
+closet organizer
+drawer organizer
+shoe organizer
+jewelry box
+jewelry stand
+jewelry hanger
+tie rack
+belt rack
+scarf hanger
+hat box
+shoe box
+storage ottoman
+storage bench
+under-bed storage
+bed risers
+space bag
+vacuum storage bag
+plastic bin
+plastic tote
+wicker basket
+wire basket
+decorative box
+keepsake box
+first aid kit
+bandages
+gauze
+medical tape
+antiseptic
+antibiotic ointment
+pain reliever
+thermometer
+hot water bottle
+ice pack
+heating pad
+blood pressure monitor
+glucose monitor
+pill organizer
+pill cutter
+medical alert bracelet
+crutch
+wheelchair
+walker
+cane
+prescription glasses
+reading glasses
+sunglasses
+contact lenses
+hearing aid
+night guard
+dental floss
+interdental brush
+water flosser
+electric toothbrush
+toothbrush holder
+dental mirror
+dental pick
+dental floss
+dental floss holder
+oral irrigator
+breath freshener
+mouthwash
+cotton swabs
+cotton balls
+nail clipper
+nail file
+nail buffer
+cuticle scissors
+cuticle nipper
+cuticle oil
+nail polish
+nail polish remover
+pumice stone
+foot file
+pedicure kit
+manicure kit
+hair brush
+hair comb
+hair pick
+hair dryer
+curling iron
+flat iron
+hot rollers
+hair pins
+bobby pins
+hair elastics
+scrunchies
+headbands
+shower cap
+swim cap
+hair net
+beard trimmer
+electric razor
+shaving cream
+aftershave
+razor
+disposable razor
+straight razor
+shaving brush
+shaving soap
+shaving mug
+beard oil
+beard balm
+mustache wax
+wax strip
+wax warmer
+epilator
+hand mirror
+makeup mirror
+magnifying mirror
+lighted mirror
+makeup organizer
+makeup bag
+makeup brush set
+makeup sponge
+foundation
+concealer
+powder
+blush
+bronzer
+highlighter
+eyeshadow
+eyeliner
+mascara
+lipstick
+lip liner
+lip balm
+makeup remover
+facial cleanser
+facial toner
+facial moisturizer
+eye cream
+face mask
+exfoliant
+serum
+face oil
+sunscreen
+self-tanner
+fake eyelashes
+eyelash curler
+eyebrow pencil
+eyebrow gel
+eyebrow brush
+eyebrow razor
+eyebrow stencil
+eyebrow scissors
+eyebrow tweezers
+brow gel
+eyebrow pomade
+bronzer
+blush
+makeup sponge
+beauty blender
+makeup brush cleaner
+makeup setting spray
+sheet mask
+clay mask
+gel mask
+peel-off mask
+under-eye mask
+face steamer
+facial roller
+gua sha tool
+massager
+water pick
+electric toothbrush
+manual toothbrush
+toothpaste
+mouthwash
+dental floss
+tongue scraper
+whitening strips
+whitening trays
+whitening pen
+mouthguard
+retainer
+denture
+dental adhesive
+adhesive remover
+tooth powder
+tooth soap
+toothbrush travel case

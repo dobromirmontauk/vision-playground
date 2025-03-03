@@ -21,10 +21,11 @@ import queue
 import atexit
 import argparse
 from flask import Flask
+from modules.utils.config import load_categories
 
 from modules.camera import create_camera
 from modules.detection import create_detector
-from modules.utils import FrameProcessor
+from modules.utils import FrameProcessor, get_default_categories
 from modules.api import register_routes
 
 # Parse command line arguments
@@ -40,6 +41,10 @@ def parse_args():
                       help="Host to run the web server on (default: 0.0.0.0)")
     parser.add_argument("--categories", type=str, nargs='+',
                       help="Custom categories for CLIP detector (only applicable with --model=clip)")
+    parser.add_argument("--categories-file", type=str,
+                      help="Path to a file containing categories (one per line)")
+    parser.add_argument("--max-categories", type=int, default=1000,
+                      help="Maximum number of categories to use (default: 1000)")
     
     return parser.parse_args()
 
@@ -69,8 +74,26 @@ def capture_and_process(args):
     if args.model.lower() == "yolo":
         detector_kwargs['model_path'] = 'yolov8n.pt'
     elif args.model.lower() == "clip":
+        # Determine categories to use
         if args.categories:
+            # Use command line categories if specified
             detector_kwargs['categories'] = args.categories
+            print(f"Using {len(args.categories)} categories from command line")
+        else:
+            # Otherwise load categories from file
+            categories = []
+            if args.categories_file:
+                # Load from specified file
+                categories = load_categories(args.categories_file, args.max_categories)
+            else:
+                # Load from default file
+                categories = get_default_categories(args.max_categories)
+                
+            if categories:
+                detector_kwargs['categories'] = categories
+                print(f"Using {len(categories)} categories from file")
+            else:
+                print("No categories found, using default CLIP categories")
     
     # Create the detector
     detector = create_detector(model_type=args.model, **detector_kwargs)

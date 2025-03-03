@@ -7,8 +7,9 @@ source venv/bin/activate
 export PYTORCH_ENABLE_MPS_FALLBACK=1
 
 # Run the application with the CLIP detector on MPS (Apple Silicon GPU)
-echo "Starting application with CLIP object detector on Apple Silicon GPU..."
-python app.py --model clip > server.log 2>&1 &
+echo "Starting application with CLIP detector on Apple Silicon GPU..."
+echo "Using 1000 household items categories from data file..."
+python app.py --model clip --max-categories 1000 > server.log 2>&1 &
 
 # Store the PID
 echo $! > server.pid
