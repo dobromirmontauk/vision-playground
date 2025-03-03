@@ -30,6 +30,14 @@
             max-width: 1024px;
             height: auto;
         }
+        .detection-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allow clicks to pass through to the overlay beneath */
+        }
         .video-overlay {
             position: absolute;
             top: 0;
@@ -192,6 +200,7 @@
     
     <div class="video-container">
         <img class="video-feed" src="{{ url_for('video_feed') }}" alt="Video Stream" id="videoFeed">
+        <canvas class="detection-overlay" id="detectionOverlay"></canvas>
         <div class="video-overlay" id="videoOverlay"></div>
     </div>
     
@@ -300,6 +309,114 @@
             // Current frame data and detections
             let currentFrameData = null;
             
+            // Get a random color for a class
+            function getClassColor(className) {
+                // Hash the class name to get a consistent color
+                let hash = 0;
+                for (let i = 0; i < className.length; i++) {
+                    hash = className.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                
+                // Convert to RGB
+                const r = (hash & 0xFF0000) >> 16;
+                const g = (hash & 0x00FF00) >> 8;
+                const b = hash & 0x0000FF;
+                
+                // Ensure color is not too dark
+                const brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                if (brightness < 0.4) {
+                    // Make it brighter if too dark
+                    const brighterR = Math.min(r + 100, 255);
+                    const brighterG = Math.min(g + 100, 255);
+                    const brighterB = Math.min(b + 100, 255);
+                    return `rgb(${brighterR}, ${brighterG}, ${brighterB})`;
+                }
+                
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+            
+            // Draw detections on the canvas overlay
+            function drawDetectionsOnCanvas(detections, dimensions) {
+                const canvas = document.getElementById('detectionOverlay');
+                const videoRect = document.querySelector('.video-feed').getBoundingClientRect();
+                
+                // Set canvas size to match the video display size
+                canvas.width = videoRect.width;
+                canvas.height = videoRect.height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Scale factors to map from image coordinates to display coordinates
+                const scaleX = canvas.width / dimensions.width;
+                const scaleY = canvas.height / dimensions.height;
+                
+                // Draw each detection
+                detections.forEach((detection, index) => {
+                    const [x1, y1, x2, y2] = detection.box;
+                    const className = detection.class;
+                    const confidence = detection.confidence;
+                    
+                    // Scale coordinates to canvas size
+                    const displayX1 = x1 * scaleX;
+                    const displayY1 = y1 * scaleY;
+                    const displayX2 = x2 * scaleX;
+                    const displayY2 = y2 * scaleY;
+                    const width = displayX2 - displayX1;
+                    const height = displayY2 - displayY1;
+                    
+                    // Get color for this class
+                    const color = getClassColor(className);
+                    
+                    // Draw bounding box
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(displayX1, displayY1, width, height);
+                    
+                    // Draw label background
+                    const label = `${className} ${confidence.toFixed(2)}`;
+                    const textWidth = ctx.measureText(label).width;
+                    ctx.fillStyle = color;
+                    ctx.fillRect(displayX1, displayY1 - 20, textWidth + 10, 20);
+                    
+                    // Choose text color (black or white) based on background brightness
+                    const rgb = color.match(/\d+/g);
+                    const brightness = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+                    ctx.fillStyle = brightness > 0.5 ? 'black' : 'white';
+                    
+                    // Draw label text
+                    ctx.font = '14px Arial';
+                    ctx.fillText(label, displayX1 + 5, displayY1 - 5);
+                    
+                    // Draw Fix button
+                    const buttonWidth = 50;
+                    const buttonHeight = 30;
+                    const buttonX = displayX2 - buttonWidth;
+                    const buttonY = displayY1;
+                    
+                    ctx.fillStyle = 'rgb(255, 0, 0)';  // Red for the Fix button
+                    ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
+                    
+                    ctx.fillStyle = 'white';  // White text
+                    ctx.font = 'bold 14px Arial';
+                    ctx.fillText('FIX', buttonX + 15, buttonY + 20);
+                    
+                    // Add detection ID (small text at bottom of box)
+                    ctx.font = '12px Arial';
+                    ctx.fillStyle = 'white';
+                    ctx.fillText(`id:${index}`, displayX1 + 5, displayY2 - 5);
+                });
+                
+                // Draw FPS stats at the top
+                const statsDisplay = document.getElementById('statsDisplay');
+                if (statsDisplay && statsDisplay.textContent && !statsDisplay.textContent.includes('Loading')) {
+                    const statsText = statsDisplay.textContent;
+                    ctx.font = 'bold 16px Arial';
+                    ctx.fillStyle = 'rgb(255, 0, 0)';
+                    ctx.fillText(statsText, 10, 30);
+                }
+            }
+            
             // Fetch synchronized frame data
             function fetchSynchronizedFrame() {
                 fetch('/api/frame_data')
@@ -318,6 +435,9 @@
                             syncedData.setAttribute('data-detections', JSON.stringify(data.detections));
                             syncedData.setAttribute('data-frame-id', data.frame_id);
                             syncedData.setAttribute('data-dimensions', JSON.stringify(data.dimensions));
+                            
+                            // Draw detections on the canvas overlay
+                            drawDetectionsOnCanvas(data.detections, data.dimensions);
                             
                             // For debugging
                             // console.log('Synced frame updated: frame_id=' + data.frame_id + ', detections=' + data.detections.length);

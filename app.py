@@ -330,7 +330,8 @@ def process_frames():
             # Store frame data for API access
             frame_data = {
                 'timestamp': time.time(),
-                'frame': frame.copy(),
+                'frame': frame.copy(),  # Original frame without annotations
+                'annotated_frame': annotated_frame,  # Frame with visual annotations
                 'detections': detections
             }
             
@@ -483,18 +484,21 @@ def get_frame_data():
             processed_frame_queue.put(frame_data)  # Put it back for other consumers
             
             if isinstance(frame_data, tuple):
-                frame, frame_info = frame_data
+                _, frame_info = frame_data
                 detections = frame_info.get('detections', [])
+                
+                # Get the original frame without annotations
+                original_frame = frame_info.get('frame')
                 
                 # Create a unique frame ID based on timestamp
                 frame_id = str(int(time.time() * 1000))
                 
-                # Encode the frame as base64
-                _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+                # Encode the original frame (without annotations) as base64
+                _, buffer = cv2.imencode('.jpg', original_frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
                 base64_frame = base64.b64encode(buffer).decode('utf-8')
                 
                 # Get frame dimensions
-                frame_height, frame_width = frame.shape[:2]
+                frame_height, frame_width = original_frame.shape[:2]
                 
                 return jsonify({
                     'success': True,
@@ -718,7 +722,7 @@ def fix_detection():
             
             if isinstance(frame_data, tuple):
                 _, frame_info = frame_data
-                frame = frame_info.get('frame')
+                frame = frame_info.get('frame')  # Get the original frame without annotations
                 detections = frame_info.get('detections', [])
             else:
                 # For backwards compatibility
