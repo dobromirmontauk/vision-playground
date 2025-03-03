@@ -16,7 +16,8 @@ class FrameData:
     def __init__(self, 
                  original_frame: np.ndarray, 
                  detections: List[Detection] = None,
-                 timestamp: float = None):
+                 timestamp: float = None,
+                 detector = None):
         """
         Initialize frame data.
         
@@ -24,10 +25,12 @@ class FrameData:
             original_frame: The original frame without annotations
             detections: List of Detection objects
             timestamp: Frame timestamp (defaults to current time)
+            detector: Reference to the detector that processed this frame
         """
         self.timestamp = timestamp if timestamp is not None else time.time()
         self.original_frame = original_frame
         self.detections = detections if detections is not None else []
+        self.detector = detector
         
         # Create an annotated copy of the frame
         self.annotated_frame = None
@@ -145,7 +148,11 @@ class FrameProcessor:
         stats = self.performance_monitor.get_stats()
         
         # Create frame data
-        frame_data = FrameData(original_frame=frame_copy, detections=detections)
+        frame_data = FrameData(
+            original_frame=frame_copy, 
+            detections=detections,
+            detector=self.detector
+        )
         
         # Add performance stats to the frame data for retrieval by API
         frame_data.performance_stats = stats

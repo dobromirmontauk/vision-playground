@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """
-Main application file for the YOLO Object Detection web app.
+Main application file for the Object Detection web app.
 
 This application allows users to:
 1. View real-time object detection from a webcam
 2. Save and review detected objects
 3. Fix mislabeled objects
+
+Supported detection models:
+- YOLO: Fast object detection using YOLOv8
+- CLIP: Zero-shot detection using CLIP for classification
 """
 
 import os
@@ -15,12 +19,29 @@ import signal
 import threading
 import queue
 import atexit
+import argparse
 from flask import Flask
 
 from modules.camera import create_camera
 from modules.detection import create_detector
 from modules.utils import FrameProcessor
 from modules.api import register_routes
+
+# Parse command line arguments
+def parse_args():
+    parser = argparse.ArgumentParser(description="Object Detection Web App")
+    parser.add_argument("--model", type=str, default="yolo", choices=["yolo", "clip"],
+                      help="Detection model to use (default: yolo)")
+    parser.add_argument("--confidence", type=float, default=0.25,
+                      help="Confidence threshold for detections (default: 0.25)")
+    parser.add_argument("--port", type=int, default=5000,
+                      help="Port to run the web server on (default: 5000)")
+    parser.add_argument("--host", type=str, default="0.0.0.0",
+                      help="Host to run the web server on (default: 0.0.0.0)")
+    parser.add_argument("--categories", type=str, nargs='+',
+                      help="Custom categories for CLIP detector (only applicable with --model=clip)")
+    
+    return parser.parse_args()
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -34,11 +55,25 @@ shutdown_event = threading.Event()
 frame_processor = None  # Will be set in the capture_and_process function
 
 
-def capture_and_process():
+def capture_and_process(args):
     """Thread function to capture and process frames from the camera."""
     # Initialize components
     camera = create_camera(use_test_camera=False, width=640, height=480, fps=30)
-    detector = create_detector(model_type="yolo", model_path='yolov8n.pt')
+    
+    # Create detector based on command line arguments
+    detector_kwargs = {
+        'confidence_threshold': args.confidence
+    }
+    
+    # Add model-specific arguments
+    if args.model.lower() == "yolo":
+        detector_kwargs['model_path'] = 'yolov8n.pt'
+    elif args.model.lower() == "clip":
+        if args.categories:
+            detector_kwargs['categories'] = args.categories
+    
+    # Create the detector
+    detector = create_detector(model_type=args.model, **detector_kwargs)
     processor = FrameProcessor(detector)
     
     # Make the processor available globally
@@ -49,6 +84,7 @@ def capture_and_process():
     max_failures = 5
     
     print(f"Starting capture with {detector.get_name()} detector")
+    print(f"Detector info: {detector.get_info()}")
     
     while not shutdown_event.is_set():
         try:
@@ -66,22 +102,38 @@ def capture_and_process():
                 # Reset failure counter on success
                 consecutive_failures = 0
                 
-                # Process the frame
-                frame_data = processor.process_frame(frame)
-                
-                # If the queue is full, remove the old frame
-                if frame_queue.full():
+                # Process the frame with timeout protection
+                try:
+                    # Add a timeout mechanism to prevent hanging on a single frame
+                    process_timeout = 5.0  # 5 seconds max per frame
+                    
+                    # Create a timer to measure how long we're spending on a frame
+                    start_time = time.time()
+                    frame_data = processor.process_frame(frame)
+                    processing_time = time.time() - start_time
+                    
+                    print(f"Frame processed in {processing_time:.2f} seconds")
+                    
+                    # If the queue is full, remove the old frame
+                    if frame_queue.full():
+                        try:
+                            frame_queue.get_nowait()
+                        except queue.Empty:
+                            pass
+                    
+                    # Put the new processed frame in the queue
                     try:
-                        frame_queue.get_nowait()
-                    except queue.Empty:
+                        if not shutdown_event.is_set():  # Don't put new frames during shutdown
+                            frame_queue.put_nowait(frame_data)
+                    except queue.Full:
                         pass
                 
-                # Put the new processed frame in the queue
-                try:
-                    if not shutdown_event.is_set():  # Don't put new frames during shutdown
-                        frame_queue.put_nowait(frame_data)
-                except queue.Full:
-                    pass
+                except Exception as e:
+                    print(f"Error processing frame: {e}")
+                    import traceback
+                    print(traceback.format_exc())
+                    # Prevent CPU spinning on errors
+                    time.sleep(0.1)
             else:
                 # Handle read failure
                 consecutive_failures += 1
@@ -107,9 +159,9 @@ def capture_and_process():
     print("Capture thread exiting cleanly")
 
 
-def start_processing_thread():
+def start_processing_thread(args):
     """Start the thread for capturing and processing frames."""
-    process_thread = threading.Thread(target=capture_and_process, daemon=True)
+    process_thread = threading.Thread(target=capture_and_process, args=(args,), daemon=True)
     process_thread.start()
     return process_thread
 
@@ -136,6 +188,9 @@ def signal_handler(sig, frame):
 
 
 if __name__ == '__main__':
+    # Parse command line arguments
+    args = parse_args()
+    
     # Register signal handlers
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
@@ -145,7 +200,7 @@ if __name__ == '__main__':
     
     try:
         # Start the processing thread
-        process_thread = start_processing_thread()
+        process_thread = start_processing_thread(args)
         
         # We need access to the processor's performance monitor from the main thread
         class StatsProvider:
@@ -163,7 +218,8 @@ if __name__ == '__main__':
         register_routes(app, frame_queue, shutdown_event, StatsProvider())
         
         # Start the Flask app
-        app.run(host='0.0.0.0', port=5000, debug=False)
+        print(f"Starting web server on {args.host}:{args.port}")
+        app.run(host=args.host, port=args.port, debug=False)
     except Exception as e:
         print(f"Error starting application: {e}")
         import traceback

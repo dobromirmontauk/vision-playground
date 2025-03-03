@@ -196,7 +196,7 @@
     </style>
 </head>
 <body>
-    <h1>YOLO Object Detection Stream</h1>
+    <h1>{{ model_name|default('Object Detection') }} Stream</h1>
     
     <div class="video-container">
         <img class="video-feed" src="{{ url_for('video_feed') }}" alt="Video Stream" id="videoFeed">
@@ -247,9 +247,19 @@
     
     <div class="info">
         <h2>About</h2>
-        <p>This application uses a webcam to detect objects in real-time using the YOLOv8 model.</p>
+        <p>This application uses a webcam to detect objects in real-time using the {{ model_name|default('Object Detection') }} model.</p>
         <p>Objects are identified with bounding boxes and labeled with their class name and confidence score.</p>
         <p>Click on the "Fix" button next to any misrecognized object to save it for relabeling.</p>
+        {% if model_info %}
+        <div class="model-info">
+            <h3>Model Information</h3>
+            <ul>
+            {% for key, value in model_info.items() %}
+                <li><strong>{{ key }}:</strong> {{ value }}</li>
+            {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
     </div>
     
     <div id="notification" class="notification"></div>

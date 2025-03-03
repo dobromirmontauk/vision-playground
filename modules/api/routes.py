@@ -32,7 +32,26 @@ def register_routes(app, frame_queue, shutdown_event, stats_provider):
     @app.route('/')
     def index():
         """Render the home page."""
-        return render_template('index.html')
+        # Get detector info from frame processor to display in template
+        detector_info = {}
+        model_name = "Object Detection"
+        
+        if frame_queue and not frame_queue.empty():
+            try:
+                frame_data = frame_queue.get(timeout=1.0)
+                frame_queue.put(frame_data)  # Put it back for other consumers
+                
+                if hasattr(frame_data, 'detector') and frame_data.detector:
+                    model_name = frame_data.detector.get_name()
+                    detector_info = frame_data.detector.get_info()
+            except Exception as e:
+                print(f"Error getting detector info: {e}")
+        
+        return render_template(
+            'index.html', 
+            model_name=model_name,
+            model_info=detector_info
+        )
     
     @app.route('/video_feed')
     def video_feed():

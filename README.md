@@ -1,12 +1,16 @@
-# YOLO Object Detection Web Application
+# Object Detection Web Application
 
-This application uses YOLOv8 to detect objects from your webcam in real-time and displays the results through an interactive web interface.
+This application performs real-time object detection from your webcam and displays the results through an interactive web interface. It supports multiple detection models:
+
+- **YOLO**: Fast object detection using YOLOv8
+- **CLIP**: Zero-shot object classification using OpenAI's CLIP model
 
 ## Features
 
-- Real-time object detection using webcam input
+- Real-time object detection using webcam input 
+- Multiple object detection models to choose from
 - Visual bounding boxes with class labels and confidence scores
-- Interactive interface to capture and save misrecognized objects
+- Interactive interface to capture and save detections
 - Ability to browse and relabel saved detections
 - Performance statistics display (FPS, processing time)
 - Graceful server shutdown via web UI
@@ -42,10 +46,19 @@ This application uses YOLOv8 to detect objects from your webcam in real-time and
 
 Start the server with:
 ```bash
+# Run with default YOLO detector
 ./run_server.sh
+
+# Or specify a detector model
+python app.py --model yolo  # Use YOLO detector
+python app.py --model clip  # Use CLIP detector
+
+# Additional options
+python app.py --model clip --confidence 0.4 --port 8080
+python app.py --model clip --categories person car dog chair  # Specific categories for CLIP
 ```
 
-This will start the Flask application on http://localhost:5000
+This will start the Flask application on http://localhost:5000 (or custom port if specified)
 
 ### Stopping the Server
 
@@ -84,10 +97,21 @@ pytest test_frontend.py -v
 ## How It Works
 
 - OpenCV is used to capture frames from your webcam
-- YOLOv8 processes these frames to detect objects
+- Object detection models process frames to detect objects:
+  - **YOLO**: Fast general-purpose object detection
+  - **CLIP**: Zero-shot classification using natural language understanding
 - Flask provides the web server to stream the processed video
 - Threading is used to manage camera capture and inference simultaneously
 - Canvas operations in the browser allow for user interaction with the video feed
+
+### Testing CLIP Detector
+
+You can test the CLIP detector independently using:
+```bash
+python test_clip_detector.py --model clip --categories person car dog chair
+```
+
+This will capture a frame from your webcam (or use a specified image) and test the CLIP detection on it.
 
 ## Technical Details
 
