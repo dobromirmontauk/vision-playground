@@ -5,6 +5,11 @@ This application performs real-time object detection from your webcam and displa
 - **YOLO**: Fast object detection using YOLOv8
 - **CLIP**: Zero-shot object classification using OpenAI's CLIP model (supports 1000+ household item categories)
 
+- <img width="1260" alt="image" src="https://github.com/user-attachments/assets/f458d4a8-cfd6-4f4a-920f-9278ae944e21" />
+<img width="1260" alt="image" src="https://github.com/user-attachments/assets/5a36e476-0ead-4ee2-b213-60cfb8dcbadc" />
+
+
+
 ## Features
 
 - Real-time object detection using webcam input 
