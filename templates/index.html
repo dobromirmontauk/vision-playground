@@ -292,22 +292,30 @@
             
             // Handle click on the video overlay
             overlay.addEventListener('click', function(e) {
-                if (!videoRect) return;
+                // Make sure we have updated dimensions
+                updateVideoDimensions();
+                if (!videoRect) {
+                    console.error('Video rectangle not available');
+                    return;
+                }
                 
                 // Calculate click position relative to the video
                 const x = e.clientX - videoRect.left;
                 const y = e.clientY - videoRect.top;
                 
-                console.log(`Click at position (${x}, ${y})`);
+                console.log(`Click at position (${x}, ${y}) on video of size ${videoRect.width}x${videoRect.height}`);
                 
                 // Create an off-screen canvas to capture the current video frame
                 const video = document.querySelector('.video-feed');
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
                 
-                // Set canvas dimensions to match the video frame
-                canvas.width = video.width;
-                canvas.height = video.height;
+                // Set canvas dimensions to match the video element's display size
+                // Using getBoundingClientRect() to get the actual display size
+                canvas.width = video.naturalWidth || videoRect.width;
+                canvas.height = video.naturalHeight || videoRect.height;
+                
+                console.log(`Canvas created with size ${canvas.width}x${canvas.height}`);
                 
                 // Draw the current video frame to the canvas
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -347,36 +355,17 @@
                     confidence: 1.0
                 };
                 
-                // Show notification to user with the crop preview
-                const previewNotification = document.createElement('div');
-                previewNotification.className = 'preview-notification show';
-                previewNotification.innerHTML = `
-                    <div class="preview-content">
-                        <h3>Save this selection?</h3>
-                        <img src="${dataURL}" class="crop-preview" alt="Crop preview">
-                        <div class="preview-metadata">
-                            <p>Position: (${metadata.x}, ${metadata.y})</p>
-                            <p>Size: ${metadata.width}x${metadata.height}</p>
-                        </div>
-                        <div class="preview-buttons">
-                            <button id="save-crop">Save</button>
-                            <button id="cancel-crop">Cancel</button>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(previewNotification);
-                
                 // Create a unique ID for this preview
                 const previewId = 'preview-' + Date.now();
-                
-                // Set the ID before setting innerHTML
-                previewNotification.id = previewId;
-                
-                // Add unique IDs to buttons to avoid conflicts
                 const saveButtonId = 'save-crop-' + previewId;
                 const cancelButtonId = 'cancel-crop-' + previewId;
                 
-                // Set the innerHTML with the unique IDs
+                // Show notification to user with the crop preview
+                const previewNotification = document.createElement('div');
+                previewNotification.className = 'preview-notification show';
+                previewNotification.id = previewId;
+                
+                // Set the HTML content with unique IDs for the buttons
                 previewNotification.innerHTML = `
                     <div class="preview-content">
                         <h3>Save this selection?</h3>
@@ -392,8 +381,9 @@
                     </div>
                 `;
                 
-                // Append to body (only once!)
+                // Append to body
                 document.body.appendChild(previewNotification);
+                console.log('Preview notification added to DOM with ID:', previewId);
                 
                 // Handle save button - now with unique ID
                 document.getElementById(saveButtonId).addEventListener('click', function() {
@@ -451,7 +441,6 @@
                         console.error('Error removing preview:', err);
                     }
                 });
-            }
             });
             
             // Update stats periodically

@@ -118,149 +118,69 @@ class CropTests(PlaywrightTestCase):
     """Tests for the crop selection functionality"""
     
     def test_crop_selection_flow(self):
-        """Test the crop selection and saving flow"""
+        """Test the crop selection and saving flow by interacting with the UI directly"""
         # Navigate to the homepage
         self.page.goto(BASE_URL)
         
         # Wait for video feed to initialize
         self.page.wait_for_selector(".video-feed", state="visible")
+        self.page.wait_for_selector(".video-overlay", state="visible")
         
-        # Verify crop selection functionality
-        result = self.page.evaluate("""() => {
-            try {
-                // Get references to elements
-                const video = document.querySelector('.video-feed');
-                const overlay = document.querySelector('.video-overlay');
-                
-                if (!video || !overlay) {
-                    return { success: false, error: 'Video or overlay element not found' };
-                }
-                
-                // Get the dimensions and position
-                const rect = video.getBoundingClientRect();
-                
-                // Create an off-screen canvas 
-                const canvas = document.createElement('canvas');
-                canvas.width = video.width;
-                canvas.height = video.height;
-                const context = canvas.getContext('2d');
-                
-                // Draw the current video frame to the canvas
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
-                // Create a crop metadata
-                const cropSize = 100;
-                const cropX = Math.max(0, rect.width/2 - cropSize/2);
-                const cropY = Math.max(0, rect.height/2 - cropSize/2);
-                const cropWidth = Math.min(cropSize, canvas.width - cropX);
-                const cropHeight = Math.min(cropSize, canvas.height - cropY);
-                
-                // Create a new canvas for the cropped image
-                const cropCanvas = document.createElement('canvas');
-                cropCanvas.width = cropWidth;
-                cropCanvas.height = cropHeight;
-                const cropContext = cropCanvas.getContext('2d');
-                
-                // Draw the cropped section
-                cropContext.drawImage(
-                    canvas, 
-                    cropX, cropY, cropWidth, cropHeight,
-                    0, 0, cropWidth, cropHeight
-                );
-                
-                // Get the data URL
-                const dataURL = cropCanvas.toDataURL('image/jpeg', 0.9);
-                
-                // Return test data
-                return {
-                    success: true,
-                    dataURL: dataURL.substring(0, 30) + '...',
-                    testMetadata: {
-                        x: Math.round(cropX),
-                        y: Math.round(cropY),
-                        width: Math.round(cropWidth),
-                        height: Math.round(cropHeight),
-                        class: "test_selection",
-                        confidence: 1.0
-                    },
-                    videoDimensions: {
-                        width: video.width,
-                        height: video.height
-                    }
-                };
-            } catch (error) {
-                return { 
-                    success: false, 
-                    error: error.toString(),
-                    stack: error.stack
-                };
-            }
-        }""")
-        
-        logger.info(f"Crop test result: {result}")
-        
-        # Skip if canvas setup failed
-        if not result.get('success'):
-            self.skipTest(f"Canvas setup failure: {result.get('error')}")
-            
-        # Test the fix_detection API
-        api_response = self.page.evaluate("""() => {
-            return fetch('/api/fix_detection', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    id: 0  // Just test with first detection
-                })
-            })
-            .then(response => response.json())
-            .catch(error => {
-                return {
-                    success: false,
-                    error: error.toString()
-                };
-            });
-        }""")
-        
-        logger.info(f"API response for fix_detection: {api_response}")
-        
-        # Test UI interaction
+        # Get the video overlay element for interaction
         video_overlay = self.page.locator(".video-overlay")
         box = video_overlay.bounding_box()
         
-        if box:
-            # Click in the center of the video
-            center_x = box["x"] + box["width"] / 2
-            center_y = box["y"] + box["height"] / 2
-            self.page.mouse.click(center_x, center_y)
+        if not box:
+            self.skipTest("Could not get video overlay bounding box")
+            return
             
-            # Wait a short time for UI elements to appear
-            self.page.wait_for_timeout(1000)
+        # Click in the center of the video to simulate user selecting a crop area
+        center_x = box["x"] + box["width"] / 2
+        center_y = box["y"] + box["height"] / 2
+        self.page.mouse.click(center_x, center_y)
+        
+        # Wait for UI elements to appear after clicking
+        self.page.wait_for_timeout(1000)
+        
+        # Check if either a preview dialog or notification is shown after clicking
+        preview_visible = self.page.locator(".preview-notification.show").count() > 0
+        notification_visible = self.page.locator(".notification.show").count() > 0
+        
+        logger.info(f"UI response: Preview visible: {preview_visible}, Notification visible: {notification_visible}")
+        
+        # Verify that some UI response happened after clicking
+        self.assertTrue(preview_visible or notification_visible, 
+                       "Neither preview nor notification appeared after clicking")
+        
+        # If preview dialog appeared, test the save flow
+        if preview_visible:
+            # Find and click the save button
+            save_button = self.page.locator(".save-crop-btn")
+            self.assertTrue(save_button.count() > 0, "Save button not found")
             
-            # Check for preview or notification
-            preview_visible = self.page.locator(".preview-notification.show").count() > 0
-            notification_visible = self.page.locator(".notification.show").count() > 0
+            logger.info("Save button found, clicking it")
+            save_button.click()
             
-            logger.info(f"UI response: Preview visible: {preview_visible}, Notification visible: {notification_visible}")
-            
-            # If preview dialog appeared, we could test the save flow
-            if preview_visible:
-                save_button = self.page.locator(".save-crop-btn")
-                if save_button.count() > 0:
-                    logger.info("Save button found, clicking it")
-                    save_button.click()
-                    
-                    # Check for success notification
-                    try:
-                        self.page.wait_for_selector(".notification.show", state="visible", timeout=3000)
-                        notification_text = self.page.locator(".notification.show").text_content()
-                        logger.info(f"Notification after save: {notification_text}")
-                        self.assertIn("Saved:", notification_text, "Notification doesn't indicate success")
-                    except PlaywrightTimeoutError:
-                        logger.info("Notification didn't appear after clicking save button")
-        else:
-            logger.warning("Could not get video overlay bounding box")
+            # Check for success notification after saving
+            try:
+                self.page.wait_for_selector(".notification.show", state="visible", timeout=3000)
+                notification_text = self.page.locator(".notification.show").text_content()
+                logger.info(f"Notification after save: {notification_text}")
+                self.assertIn("Saved:", notification_text, "Notification doesn't indicate success")
+            except PlaywrightTimeoutError:
+                self.fail("Notification didn't appear after clicking save button")
+        
+        # Additional validation that UI elements behave as expected
+        # Check if detection boxes are visible
+        detection_boxes = self.page.locator(".detection-box")
+        logger.info(f"Detection boxes visible: {detection_boxes.count() > 0}")
+        
+        # Verify stats are updating (they should be if the video is running)
+        stats_element = self.page.locator("#statsDisplay")
+        self.assertTrue(stats_element.is_visible(), "Stats display should be visible")
+        stats_text = stats_element.text_content()
+        self.assertFalse("Loading stats..." in stats_text and stats_text.strip() == "Loading stats...", 
+                        "Stats should load and not remain in loading state")
 
 
 class SavedDetectionsTests(PlaywrightTestCase):
