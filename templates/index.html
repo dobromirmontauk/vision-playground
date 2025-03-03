@@ -191,8 +191,14 @@
     <h1>YOLO Object Detection Stream</h1>
     
     <div class="video-container">
-        <img class="video-feed" src="{{ url_for('video_feed') }}" alt="Video Stream">
+        <img class="video-feed" src="{{ url_for('video_feed') }}" alt="Video Stream" id="videoFeed">
         <div class="video-overlay" id="videoOverlay"></div>
+    </div>
+    
+    <!-- Hidden container for synchronized frame data -->
+    <div id="syncedFrameContainer" style="display: none;">
+        <img id="syncedFrame" style="display: none;">
+        <div id="syncedData" style="display: none;"></div>
     </div>
     
     <div class="stats-container">
@@ -260,6 +266,7 @@
             const confirmYes = document.getElementById('confirmYes');
             const confirmNo = document.getElementById('confirmNo');
             let videoRect = null;
+            let currentDetections = [];
             
             // Get video dimensions
             function updateVideoDimensions() {
@@ -290,6 +297,71 @@
                 }, 3000);
             }
             
+            // Current frame data and detections
+            let currentFrameData = null;
+            
+            // Fetch synchronized frame data
+            function fetchSynchronizedFrame() {
+                fetch('/api/frame_data')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Store the frame data
+                            currentFrameData = data;
+                            
+                            // Update the synced frame image
+                            const syncedFrame = document.getElementById('syncedFrame');
+                            syncedFrame.src = data.frame;
+                            
+                            // Store detections in data attribute for easy access
+                            const syncedData = document.getElementById('syncedData');
+                            syncedData.setAttribute('data-detections', JSON.stringify(data.detections));
+                            syncedData.setAttribute('data-frame-id', data.frame_id);
+                            syncedData.setAttribute('data-dimensions', JSON.stringify(data.dimensions));
+                            
+                            // For debugging
+                            // console.log('Synced frame updated: frame_id=' + data.frame_id + ', detections=' + data.detections.length);
+                        } else {
+                            console.warn('Failed to fetch frame data:', data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching synchronized frame:', error);
+                    });
+            }
+            
+            // Update synchronized frame every 250ms
+            setInterval(fetchSynchronizedFrame, 250);
+            
+            // Initially fetch frame data
+            fetchSynchronizedFrame();
+            
+            // Find the detection that contains the click point
+            function findDetectionAtPoint(x, y, detections, displayRect, imageDimensions) {
+                if (!detections || detections.length === 0) return null;
+                
+                // Calculate scaling factors between display and actual image dimensions
+                const scaleX = imageDimensions.width / displayRect.width;
+                const scaleY = imageDimensions.height / displayRect.height;
+                
+                // Convert click from display coordinates to image coordinates
+                const imageX = x * scaleX;
+                const imageY = y * scaleY;
+                
+                // Check each detection
+                for (const detection of detections) {
+                    const [x1, y1, x2, y2] = detection.box;
+                    
+                    // Check if click is inside this box in image coordinates
+                    if (imageX >= x1 && imageX <= x2 && imageY >= y1 && imageY <= y2) {
+                        console.log('Found detection at click point:', detection);
+                        return detection;
+                    }
+                }
+                
+                return null;
+            }
+            
             // Handle click on the video overlay
             overlay.addEventListener('click', function(e) {
                 // Make sure we have updated dimensions
@@ -305,62 +377,125 @@
                 
                 console.log(`Click at position (${x}, ${y}) on video of size ${videoRect.width}x${videoRect.height}`);
                 
-                // Create an off-screen canvas to capture the current video frame
-                const video = document.querySelector('.video-feed');
+                // Get synchronized frame and detections
+                const syncedFrame = document.getElementById('syncedFrame');
+                const syncedData = document.getElementById('syncedData');
+                
+                if (!syncedFrame.src) {
+                    console.error('No synchronized frame available');
+                    showNotification('Please wait for frame data to load', 'error');
+                    return;
+                }
+                
+                // Get detections from data attribute
+                const detections = JSON.parse(syncedData.getAttribute('data-detections') || '[]');
+                const imageDimensions = JSON.parse(syncedData.getAttribute('data-dimensions') || '{"width":640,"height":480}');
+                
+                console.log(`Using synced frame with ${detections.length} detections`);
+                
+                // Process the synchronized frame and create a crop
+                processFrameAndCreateCrop(syncedFrame.src, detections, x, y, videoRect, imageDimensions, syncedData.getAttribute('data-frame-id'));
+            });
+            
+            // Process a frame, find detections, and create a crop
+            function processFrameAndCreateCrop(frameSrc, detections, clickX, clickY, videoRect, imageDimensions, frameId) {
+                // Create a canvas for processing the synchronized frame
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
                 
-                // Set canvas dimensions to match the video element's display size
-                // Using getBoundingClientRect() to get the actual display size
-                canvas.width = video.naturalWidth || videoRect.width;
-                canvas.height = video.naturalHeight || videoRect.height;
+                // Set canvas dimensions to match the original image dimensions
+                canvas.width = imageDimensions.width;
+                canvas.height = imageDimensions.height;
                 
-                console.log(`Canvas created with size ${canvas.width}x${canvas.height}`);
+                // Create an image object to handle the synced frame
+                const img = new Image();
                 
-                // Draw the current video frame to the canvas
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                img.onload = function() {
+                    // Draw the synced frame to the canvas
+                    context.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    // Find detection at click point
+                    const detectionAtPoint = findDetectionAtPoint(clickX, clickY, detections, videoRect, imageDimensions);
+                    
+                    let cropX, cropY, cropWidth, cropHeight, objectClass, confidence;
+                    
+                    if (detectionAtPoint) {
+                        // Use the detection's bounding box in original image coordinates
+                        const [x1, y1, x2, y2] = detectionAtPoint.box;
+                        
+                        cropX = x1;
+                        cropY = y1;
+                        cropWidth = x2 - x1;
+                        cropHeight = y2 - y1;
+                        
+                        objectClass = detectionAtPoint.class;
+                        confidence = detectionAtPoint.confidence;
+                        
+                        console.log(`Using detection box: (${cropX}, ${cropY}, ${cropWidth}, ${cropHeight})`);
+                    } else {
+                        // No detection found, create a fixed-size crop around the click
+                        console.log('No detection at click point, using fixed crop size');
+                        
+                        // Convert click to image coordinates
+                        const scaleX = imageDimensions.width / videoRect.width;
+                        const scaleY = imageDimensions.height / videoRect.height;
+                        const imageX = clickX * scaleX;
+                        const imageY = clickY * scaleY;
+                        
+                        const cropSize = 100;
+                        cropX = Math.max(0, imageX - cropSize/2);
+                        cropY = Math.max(0, imageY - cropSize/2);
+                        cropWidth = Math.min(cropSize, canvas.width - cropX);
+                        cropHeight = Math.min(cropSize, canvas.height - cropY);
+                        
+                        objectClass = "manual_selection";
+                        confidence = 1.0;
+                    }
                 
-                // Now we can work with the captured frame
-                // Let's create a crop around the click point
-                const cropSize = 100; // 100x100 pixel crop
-                const cropX = Math.max(0, x - cropSize/2);
-                const cropY = Math.max(0, y - cropSize/2);
-                const cropWidth = Math.min(cropSize, canvas.width - cropX);
-                const cropHeight = Math.min(cropSize, canvas.height - cropY);
-                
-                // Create a new canvas for the cropped image
-                const cropCanvas = document.createElement('canvas');
-                cropCanvas.width = cropWidth;
-                cropCanvas.height = cropHeight;
-                const cropContext = cropCanvas.getContext('2d');
-                
-                // Draw the cropped section
-                cropContext.drawImage(
-                    canvas, 
-                    cropX, cropY, cropWidth, cropHeight,
-                    0, 0, cropWidth, cropHeight
-                );
-                
-                // Convert the cropped canvas to a data URL
-                const dataURL = cropCanvas.toDataURL('image/jpeg', 0.9);
-                
-                // Create metadata for the save
-                const metadata = {
-                    x: Math.round(cropX),
-                    y: Math.round(cropY),
-                    width: Math.round(cropWidth),
-                    height: Math.round(cropHeight),
-                    timestamp: new Date().toISOString(),
-                    class: "manual_selection", // Default class name
-                    confidence: 1.0
+                    // Create a new canvas for the cropped image
+                    const cropCanvas = document.createElement('canvas');
+                    cropCanvas.width = cropWidth;
+                    cropCanvas.height = cropHeight;
+                    const cropContext = cropCanvas.getContext('2d');
+                    
+                    // Draw the cropped section from the synced frame
+                    cropContext.drawImage(
+                        canvas, 
+                        cropX, cropY, cropWidth, cropHeight,
+                        0, 0, cropWidth, cropHeight
+                    );
+                    
+                    // Convert the cropped canvas to a data URL
+                    const dataURL = cropCanvas.toDataURL('image/jpeg', 0.9);
+                    
+                    // Create metadata for the save
+                    const metadata = {
+                        x: Math.round(cropX),
+                        y: Math.round(cropY),
+                        width: Math.round(cropWidth),
+                        height: Math.round(cropHeight),
+                        timestamp: new Date().toISOString(),
+                        class: objectClass,
+                        confidence: confidence,
+                        frame_id: frameId
+                    };
+                    
+                    // Create a unique ID for this preview
+                    const previewId = 'preview-' + Date.now();
+                    const saveButtonId = 'save-crop-' + previewId;
+                    const cancelButtonId = 'cancel-crop-' + previewId;
+                    
+                    // Create the preview notification
+                    createPreviewNotification(previewId, saveButtonId, cancelButtonId, dataURL, metadata);
                 };
                 
-                // Create a unique ID for this preview
-                const previewId = 'preview-' + Date.now();
-                const saveButtonId = 'save-crop-' + previewId;
-                const cancelButtonId = 'cancel-crop-' + previewId;
-                
-                // Show notification to user with the crop preview
+                // Set the source to trigger onload
+                img.src = frameSrc;
+            }
+            
+            // Create and show the preview notification
+            function createPreviewNotification(previewId, saveButtonId, cancelButtonId, dataURL, metadata) {
+                // Create the preview element
                 const previewNotification = document.createElement('div');
                 previewNotification.className = 'preview-notification show';
                 previewNotification.id = previewId;
@@ -373,6 +508,7 @@
                         <div class="preview-metadata">
                             <p>Position: (${metadata.x}, ${metadata.y})</p>
                             <p>Size: ${metadata.width}x${metadata.height}</p>
+                            <p>Class: ${metadata.class} (${metadata.confidence.toFixed(2)})</p>
                         </div>
                         <div class="preview-buttons">
                             <button id="${saveButtonId}" class="save-crop-btn">Save</button>
@@ -385,9 +521,10 @@
                 document.body.appendChild(previewNotification);
                 console.log('Preview notification added to DOM with ID:', previewId);
                 
-                // Handle save button - now with unique ID
+                // Handle save button with unique ID
                 document.getElementById(saveButtonId).addEventListener('click', function() {
-                    console.log('Save button clicked');
+                    console.log('Save button clicked with metadata:', metadata);
+                    
                     // Send the cropped image and metadata to the server
                     fetch('/api/save_crop', {
                         method: 'POST',
@@ -406,42 +543,36 @@
                         } else {
                             showNotification(data.message, 'error');
                         }
-                        try {
-                            const element = document.getElementById(previewId);
-                            if (element) {
-                                document.body.removeChild(element);
-                            }
-                        } catch (err) {
-                            console.error('Error removing preview:', err);
-                        }
+                        // Remove the preview element
+                        removePreviewElement(previewId);
                     })
                     .catch(error => {
                         console.error('Error:', error);
                         showNotification('Error saving image', 'error');
-                        try {
-                            const element = document.getElementById(previewId);
-                            if (element) {
-                                document.body.removeChild(element);
-                            }
-                        } catch (err) {
-                            console.error('Error removing preview:', err);
-                        }
+                        // Remove the preview element even on error
+                        removePreviewElement(previewId);
                     });
                 });
                 
-                // Handle cancel button - now with unique ID
+                // Handle cancel button with unique ID
                 document.getElementById(cancelButtonId).addEventListener('click', function() {
                     console.log('Cancel button clicked');
-                    try {
-                        const element = document.getElementById(previewId);
-                        if (element) {
-                            document.body.removeChild(element);
-                        }
-                    } catch (err) {
-                        console.error('Error removing preview:', err);
-                    }
+                    removePreviewElement(previewId);
                 });
-            });
+            }
+            
+            // Helper function to remove a preview element from the DOM
+            function removePreviewElement(elementId) {
+                try {
+                    const element = document.getElementById(elementId);
+                    if (element) {
+                        document.body.removeChild(element);
+                        console.log(`Removed preview element ${elementId}`);
+                    }
+                } catch (err) {
+                    console.error(`Error removing preview element ${elementId}:`, err);
+                }
+            }
             
             // Update stats periodically
             function updateStats() {

@@ -473,6 +473,62 @@ def get_stats():
     print(f"Returning stats: {stats}")
     return jsonify(stats)
 
+@app.route('/api/frame_data')
+def get_frame_data():
+    """Return current frame data including detections and metadata for the frontend"""
+    try:
+        # Get the most recent processed frame data
+        try:
+            frame_data = processed_frame_queue.get(timeout=1.0)
+            processed_frame_queue.put(frame_data)  # Put it back for other consumers
+            
+            if isinstance(frame_data, tuple):
+                frame, frame_info = frame_data
+                detections = frame_info.get('detections', [])
+                
+                # Create a unique frame ID based on timestamp
+                frame_id = str(int(time.time() * 1000))
+                
+                # Encode the frame as base64
+                _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+                base64_frame = base64.b64encode(buffer).decode('utf-8')
+                
+                # Get frame dimensions
+                frame_height, frame_width = frame.shape[:2]
+                
+                return jsonify({
+                    'success': True,
+                    'frame_id': frame_id,
+                    'frame': f"data:image/jpeg;base64,{base64_frame}",
+                    'dimensions': {
+                        'width': frame_width,
+                        'height': frame_height
+                    },
+                    'detections': detections
+                })
+            else:
+                # For backwards compatibility
+                return jsonify({
+                    'success': False,
+                    'message': 'Frame data format incompatible',
+                    'detections': []
+                })
+        except queue.Empty:
+            return jsonify({
+                'success': False,
+                'message': 'No frame data available',
+                'detections': []
+            })
+    except Exception as e:
+        print(f"Error getting frame data: {e}")
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({
+            'success': False,
+            'message': str(e),
+            'detections': []
+        })
+
 @app.route('/api/shutdown', methods=['POST'])
 def shutdown_server():
     """Endpoint to shut down the server"""
