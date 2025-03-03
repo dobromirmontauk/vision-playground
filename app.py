@@ -276,7 +276,10 @@ def process_frames():
                         'confidence': round(confidence, 2)
                     })
             
-            # Create a copy of the frame for custom annotation
+            # Keep the original frame intact (without any annotations)
+            original_frame = frame.copy()
+            
+            # Create a separate copy for custom annotation
             annotated_frame = frame.copy()
             
             # Draw bounding boxes with interactive buttons
@@ -330,7 +333,7 @@ def process_frames():
             # Store frame data for API access
             frame_data = {
                 'timestamp': time.time(),
-                'frame': frame.copy(),  # Original frame without annotations
+                'frame': original_frame,  # Original frame without annotations
                 'annotated_frame': annotated_frame,  # Frame with visual annotations
                 'detections': detections
             }
@@ -346,8 +349,8 @@ def process_frames():
             try:
                 if not shutdown_event.is_set():  # Don't put new frames during shutdown
                     # When we have detections, always keep the latest frame in the queue
-                    # For saving with the "Fix" button
-                    processed_frame_queue.put_nowait((annotated_frame, frame_data))
+                    # For saving with the "Fix" button and displaying raw frames
+                    processed_frame_queue.put_nowait((original_frame, frame_data))
             except queue.Full:
                 pass
                 
@@ -394,9 +397,15 @@ def generate_frames():
             if shutdown_event.is_set():
                 break
                 
-            # Process the frame
+            # Process the frame - get the original frame without annotations
             if isinstance(frame_tuple, tuple):
-                frame, _ = frame_tuple
+                _, frame_info = frame_tuple
+                # Use the original frame without annotations
+                frame = frame_info.get('frame', None)
+                
+                # If the original frame is not available, use the annotated frame as fallback
+                if frame is None:
+                    frame, _ = frame_tuple
             else:
                 frame = frame_tuple  # For backwards compatibility
             
