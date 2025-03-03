@@ -73,6 +73,60 @@
         .notification.show {
             opacity: 1;
         }
+        .preview-notification {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .preview-notification.show {
+            opacity: 1;
+        }
+        .preview-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            text-align: center;
+        }
+        .crop-preview {
+            max-width: 100%;
+            max-height: 200px;
+            border: 1px solid #ddd;
+            margin: 10px 0;
+        }
+        .preview-metadata {
+            margin: 10px 0;
+            text-align: left;
+            font-size: 14px;
+        }
+        .preview-buttons {
+            margin-top: 15px;
+        }
+        .preview-buttons button {
+            padding: 8px 15px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #save-crop {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #cancel-crop {
+            background-color: #f44336;
+            color: white;
+        }
         .nav-links {
             margin-top: 1rem;
         }
@@ -101,7 +155,6 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
@@ -145,6 +198,32 @@
     <div class="stats-container">
         <p class="stats" id="statsDisplay">Loading stats...</p>
     </div>
+    
+    <!-- Hidden JavaScript to handle stats updates -->
+    <script>
+        // This will run once the page is fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            const statsDisplay = document.getElementById('statsDisplay');
+            
+            // Function to update stats from API
+            function updateStats() {
+                fetch('/api/stats')
+                    .then(response => response.json())
+                    .then(data => {
+                        statsDisplay.textContent = `FPS: ${data.fps} | Processing Time: ${data.median_time} ms (median), ${data.max_time} ms (max)`;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching stats:', error);
+                    });
+            }
+            
+            // Update every second
+            setInterval(updateStats, 1000);
+            
+            // Initial update
+            updateStats();
+        });
+    </script>
     
     <div class="nav-links">
         <a href="{{ url_for('saved_detections') }}">View Saved Detections</a>
@@ -219,37 +298,175 @@
                 const x = e.clientX - videoRect.left;
                 const y = e.clientY - videoRect.top;
                 
-                // For a quick test, let's always use detection ID 0 for now
-                // In a real implementation, we would determine which detection's "Fix" button was clicked
-                // based on the coordinates and knowledge of where the buttons are rendered
+                console.log(`Click at position (${x}, ${y})`);
                 
-                fetch('/api/fix_detection', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ id: 0 }), // Always use the first detection for testing
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showNotification(data.message);
-                    } else {
-                        showNotification(data.message, 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showNotification('Error saving detection', 'error');
+                // Create an off-screen canvas to capture the current video frame
+                const video = document.querySelector('.video-feed');
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                
+                // Set canvas dimensions to match the video frame
+                canvas.width = video.width;
+                canvas.height = video.height;
+                
+                // Draw the current video frame to the canvas
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Now we can work with the captured frame
+                // Let's create a crop around the click point
+                const cropSize = 100; // 100x100 pixel crop
+                const cropX = Math.max(0, x - cropSize/2);
+                const cropY = Math.max(0, y - cropSize/2);
+                const cropWidth = Math.min(cropSize, canvas.width - cropX);
+                const cropHeight = Math.min(cropSize, canvas.height - cropY);
+                
+                // Create a new canvas for the cropped image
+                const cropCanvas = document.createElement('canvas');
+                cropCanvas.width = cropWidth;
+                cropCanvas.height = cropHeight;
+                const cropContext = cropCanvas.getContext('2d');
+                
+                // Draw the cropped section
+                cropContext.drawImage(
+                    canvas, 
+                    cropX, cropY, cropWidth, cropHeight,
+                    0, 0, cropWidth, cropHeight
+                );
+                
+                // Convert the cropped canvas to a data URL
+                const dataURL = cropCanvas.toDataURL('image/jpeg', 0.9);
+                
+                // Create metadata for the save
+                const metadata = {
+                    x: Math.round(cropX),
+                    y: Math.round(cropY),
+                    width: Math.round(cropWidth),
+                    height: Math.round(cropHeight),
+                    timestamp: new Date().toISOString(),
+                    class: "manual_selection", // Default class name
+                    confidence: 1.0
+                };
+                
+                // Show notification to user with the crop preview
+                const previewNotification = document.createElement('div');
+                previewNotification.className = 'preview-notification show';
+                previewNotification.innerHTML = `
+                    <div class="preview-content">
+                        <h3>Save this selection?</h3>
+                        <img src="${dataURL}" class="crop-preview" alt="Crop preview">
+                        <div class="preview-metadata">
+                            <p>Position: (${metadata.x}, ${metadata.y})</p>
+                            <p>Size: ${metadata.width}x${metadata.height}</p>
+                        </div>
+                        <div class="preview-buttons">
+                            <button id="save-crop">Save</button>
+                            <button id="cancel-crop">Cancel</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(previewNotification);
+                
+                // Create a unique ID for this preview
+                const previewId = 'preview-' + Date.now();
+                
+                // Set the ID before setting innerHTML
+                previewNotification.id = previewId;
+                
+                // Add unique IDs to buttons to avoid conflicts
+                const saveButtonId = 'save-crop-' + previewId;
+                const cancelButtonId = 'cancel-crop-' + previewId;
+                
+                // Set the innerHTML with the unique IDs
+                previewNotification.innerHTML = `
+                    <div class="preview-content">
+                        <h3>Save this selection?</h3>
+                        <img src="${dataURL}" class="crop-preview" alt="Crop preview">
+                        <div class="preview-metadata">
+                            <p>Position: (${metadata.x}, ${metadata.y})</p>
+                            <p>Size: ${metadata.width}x${metadata.height}</p>
+                        </div>
+                        <div class="preview-buttons">
+                            <button id="${saveButtonId}" class="save-crop-btn">Save</button>
+                            <button id="${cancelButtonId}" class="cancel-crop-btn">Cancel</button>
+                        </div>
+                    </div>
+                `;
+                
+                // Append to body (only once!)
+                document.body.appendChild(previewNotification);
+                
+                // Handle save button - now with unique ID
+                document.getElementById(saveButtonId).addEventListener('click', function() {
+                    console.log('Save button clicked');
+                    // Send the cropped image and metadata to the server
+                    fetch('/api/save_crop', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            image: dataURL,
+                            metadata: metadata
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification(`Saved: ${data.filename} (${metadata.width}x${metadata.height})`);
+                        } else {
+                            showNotification(data.message, 'error');
+                        }
+                        try {
+                            const element = document.getElementById(previewId);
+                            if (element) {
+                                document.body.removeChild(element);
+                            }
+                        } catch (err) {
+                            console.error('Error removing preview:', err);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showNotification('Error saving image', 'error');
+                        try {
+                            const element = document.getElementById(previewId);
+                            if (element) {
+                                document.body.removeChild(element);
+                            }
+                        } catch (err) {
+                            console.error('Error removing preview:', err);
+                        }
+                    });
                 });
+                
+                // Handle cancel button - now with unique ID
+                document.getElementById(cancelButtonId).addEventListener('click', function() {
+                    console.log('Cancel button clicked');
+                    try {
+                        const element = document.getElementById(previewId);
+                        if (element) {
+                            document.body.removeChild(element);
+                        }
+                    } catch (err) {
+                        console.error('Error removing preview:', err);
+                    }
+                });
+            }
             });
             
             // Update stats periodically
             function updateStats() {
                 fetch('/api/stats')
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('Stats response status:', response.status);
+                        return response.json();
+                    })
                     .then(data => {
+                        console.log('Stats data received:', data);
+                        // Update the stats display with the data from the API
                         statsDisplay.textContent = `FPS: ${data.fps} | Processing Time: ${data.median_time} ms (median), ${data.max_time} ms (max)`;
+                        // Add a data attribute to help with testing
+                        statsDisplay.setAttribute('data-stats-loaded', 'true');
                     })
                     .catch(error => {
                         console.error('Error fetching stats:', error);
@@ -257,7 +474,7 @@
             }
             
             // Update stats every second
-            setInterval(updateStats, 1000);
+            const statsInterval = setInterval(updateStats, 1000);
             
             // Initial stats update
             updateStats();
@@ -265,7 +482,16 @@
             // Handle shutdown button click
             shutdownButton.addEventListener('click', function(e) {
                 e.preventDefault();
+                console.log('Shutdown button clicked, showing confirmation dialog');
+                
+                // Ensure the display style is consistently set to 'flex'
                 confirmShutdown.style.display = 'flex';
+                
+                // Log the current display state
+                console.log('Dialog display style after setting:', window.getComputedStyle(confirmShutdown).display);
+                
+                // Force layout recalculation to ensure the dialog shows
+                confirmShutdown.getBoundingClientRect();
             });
             
             // Handle confirmation dialog responses
@@ -302,7 +528,9 @@
             });
             
             confirmNo.addEventListener('click', function() {
+                console.log('No button clicked, hiding dialog');
                 confirmShutdown.style.display = 'none';
+                console.log('Dialog display after hiding:', window.getComputedStyle(confirmShutdown).display);
             });
         });
     </script>

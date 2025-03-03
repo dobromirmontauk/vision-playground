@@ -5,7 +5,6 @@ import sys
 import json
 import signal
 from flask import Flask, Response, render_template, request, jsonify, redirect, url_for
-from ultralytics import YOLO
 import threading
 import queue
 import numpy as np
@@ -14,6 +13,11 @@ from PIL import Image
 import base64
 from io import BytesIO
 import collections
+import contextlib
+
+# Silence ultralytics import and other noisy modules
+with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f), contextlib.redirect_stderr(f):
+    from ultralytics import YOLO
 
 app = Flask(__name__)
 
@@ -36,8 +40,9 @@ stats = {
 # Threading control
 shutdown_event = threading.Event()
 
-# Load YOLOv8 model
-model = YOLO('yolov8n.pt')  # Using the smallest model for quick startup
+# Load YOLOv8 model (silently)
+with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f), contextlib.redirect_stderr(f):
+    model = YOLO('yolov8n.pt')  # Using the smallest model for quick startup
 
 # Initialize camera
 camera = None
@@ -197,7 +202,7 @@ def process_frames():
                 if shutdown_event.is_set():
                     break  # Exit immediately if we're shutting down
                 # Create a placeholder frame if there's no input and we're not shutting down
-                print("No frame available for processing, waiting...")
+                # Silently wait for a frame
                 empty_frame = np.zeros((480, 640, 3), dtype=np.uint8)
                 cv2.putText(empty_frame, "Waiting for camera input...", (50, 240), 
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
@@ -228,8 +233,9 @@ def process_frames():
             # Make a copy to ensure we don't modify the original frame
             frame_copy = frame.copy()
             
-            # Run YOLOv8 inference on the frame
-            results = model(frame_copy)
+            # Run YOLOv8 inference on the frame - suppress all output
+            with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f), contextlib.redirect_stderr(f):
+                results = model(frame_copy)
             
             # Calculate processing time in milliseconds
             processing_time = (time.time() - start_time) * 1000
@@ -338,6 +344,8 @@ def process_frames():
             # Put the new processed frame and data in the queue
             try:
                 if not shutdown_event.is_set():  # Don't put new frames during shutdown
+                    # When we have detections, always keep the latest frame in the queue
+                    # For saving with the "Fix" button
                     processed_frame_queue.put_nowait((annotated_frame, frame_data))
             except queue.Full:
                 pass
@@ -462,6 +470,7 @@ def video_feed():
 @app.route('/api/stats')
 def get_stats():
     """Return current performance stats"""
+    print(f"Returning stats: {stats}")
     return jsonify(stats)
 
 @app.route('/api/shutdown', methods=['POST'])
@@ -522,53 +531,69 @@ def shutdown_server():
         print(traceback.format_exc())
         return jsonify({'success': False, 'message': str(e)})
 
-@app.route('/api/fix_detection', methods=['POST'])
-def fix_detection():
-    """Endpoint to save a misrecognized detection"""
+@app.route('/api/save_crop', methods=['POST'])
+def save_crop():
+    """Endpoint to save a crop from the frontend"""
     try:
-        # Get detection ID from the request
+        # Get data from the request
         data = request.json
-        detection_id = int(data.get('id', -1))
+        image_data = data.get('image', '')
+        metadata = data.get('metadata', {})
         
-        # Log more information for debugging
-        print(f"Received fix request for detection ID: {detection_id}")
+        # Log info about the received crop
+        print(f"Received crop: {metadata.get('width')}x{metadata.get('height')} at position ({metadata.get('x')}, {metadata.get('y')})")
         
-        # Try to get frame data from queue first
-        frame = None
-        detections = []
+        # Extract the base64 image data (remove the data URL prefix)
+        if image_data.startswith('data:image'):
+            # Extract everything after the comma
+            base64_data = image_data.split(',')[1]
+        else:
+            base64_data = image_data
+            
+        # Decode the base64 image
+        image_bytes = base64.b64decode(base64_data)
         
-        if not processed_frame_queue.empty():
-            # Use a list to safely get the frame data from the queue without removing it
-            queue_items = list(processed_frame_queue.queue)
-            if queue_items and isinstance(queue_items[0], tuple):
-                _, frame_data = queue_items[0]
-                frame = frame_data['frame']
-                detections = frame_data['detections']
-                print(f"Queue has data, found {len(detections)} detections")
+        # Open the image using PIL
+        image = Image.open(BytesIO(image_bytes))
         
-        # Check if we have valid data
-        if frame is None or not detections or detection_id < 0 or detection_id >= len(detections):
-            print("No valid frame or detection found")
-            return jsonify({'success': False, 'message': 'No valid detection found to save'})
+        # Create a timestamp for the filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         
-        # Get the detection
-        detection = detections[detection_id]
-        print(f"Processing detection: {detection}")
+        # Filename with metadata
+        class_name = metadata.get('class', 'manual_selection')
+        confidence = metadata.get('confidence', 1.0)
+        filename = f"{timestamp}_{class_name}_{confidence}.jpg"
+        filepath = os.path.join('static/saved_boxes', filename)
         
-        # Save the detection
-        filename = save_detection(frame, detection)
+        # Save the image
+        image.save(filepath)
         
-        if filename:
-            print(f"Successfully saved detection as {filename}")
-            return jsonify({
-                'success': True, 
-                'message': f'Detection saved as {filename}',
-                'filename': filename
-            })
+        # Save additional metadata
+        metadata_obj = {
+            'original_class': class_name,
+            'confidence': confidence,
+            'timestamp': timestamp,
+            'x': metadata.get('x', 0),
+            'y': metadata.get('y', 0),
+            'width': metadata.get('width', 0),
+            'height': metadata.get('height', 0),
+            'new_label': None,
+            'filename': filename
+        }
         
-        return jsonify({'success': False, 'message': 'Detection could not be saved'})
+        metadata_path = os.path.join('static/saved_boxes', f"{timestamp}.json")
+        with open(metadata_path, 'w') as f:
+            json.dump(metadata_obj, f)
+            
+        print(f"Successfully saved crop as {filename}")
+        return jsonify({
+            'success': True, 
+            'message': f'Crop saved as {filename}',
+            'filename': filename
+        })
+        
     except Exception as e:
-        print(f"Error in fix_detection: {e}")
+        print(f"Error saving crop: {e}")
         import traceback
         print(traceback.format_exc())
         return jsonify({'success': False, 'message': str(e)})
@@ -621,6 +646,60 @@ def update_label():
         return jsonify({'success': False, 'message': 'Metadata file not found'})
     except Exception as e:
         print(f"Error updating label: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/fix_detection', methods=['POST'])
+def fix_detection():
+    """Endpoint to fix a detection based on ID"""
+    try:
+        data = request.json
+        detection_id = data.get('id')
+        
+        # Get the most recent processed frame and its detections
+        try:
+            frame_data = processed_frame_queue.get(timeout=1.0)
+            processed_frame_queue.put(frame_data)  # Put it back for other consumers
+            
+            if isinstance(frame_data, tuple):
+                _, frame_info = frame_data
+                frame = frame_info.get('frame')
+                detections = frame_info.get('detections', [])
+            else:
+                # For backwards compatibility
+                frame = frame_data
+                detections = []
+            
+            # Check if the requested detection ID exists
+            if detection_id < len(detections):
+                detection = detections[detection_id]
+                filename = save_detection(frame, detection)
+                
+                if filename:
+                    return jsonify({
+                        'success': True,
+                        'message': f'Detection saved as {filename}',
+                        'filename': filename
+                    })
+                else:
+                    return jsonify({
+                        'success': False,
+                        'message': 'Failed to save detection'
+                    })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'Detection ID not found in current frame'
+                })
+        except queue.Empty:
+            return jsonify({
+                'success': False,
+                'message': 'No frame available'
+            })
+            
+    except Exception as e:
+        print(f"Error fixing detection: {e}")
+        import traceback
+        print(traceback.format_exc())
         return jsonify({'success': False, 'message': str(e)})
 
 def start_processing_threads():
