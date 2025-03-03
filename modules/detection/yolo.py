@@ -86,3 +86,23 @@ class YOLODetector(ObjectDetector):
             "model_path": self.model_path,
             "confidence_threshold": self.confidence_threshold
         }
+        
+    def get_device_info(self) -> str:
+        """Return information about the inference device being used."""
+        if self.model is None:
+            self._initialize_model()
+            
+        if hasattr(self.model, 'device'):
+            return str(self.model.device)
+        
+        # Fallback if device can't be determined
+        try:
+            import torch
+            if torch.cuda.is_available():
+                return "cuda"
+            elif hasattr(torch, 'backends') and hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+                return "mps"
+        except (ImportError, AttributeError):
+            pass
+            
+        return "cpu"

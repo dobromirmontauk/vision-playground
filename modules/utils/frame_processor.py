@@ -163,5 +163,13 @@ class FrameProcessor:
         return frame_data
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get current performance statistics."""
-        return self.performance_monitor.get_stats()
+        """Get current performance statistics with device info."""
+        stats = self.performance_monitor.get_stats()
+        
+        # Add device info to stats
+        if self.detector:
+            stats['device'] = self.detector.get_device_info()
+        else:
+            stats['device'] = "unknown"
+            
+        return stats

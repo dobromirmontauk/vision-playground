@@ -203,13 +203,17 @@ if __name__ == '__main__':
         # We need access to the processor's performance monitor from the main thread
         class StatsProvider:
             def __init__(self):
-                self.last_stats = {'fps': 0, 'median_time': 0, 'max_time': 0}
+                self.last_stats = {'fps': 0, 'median_time': 0, 'max_time': 0, 'device': 'initializing'}
             
             def get_stats(self):
                 global frame_processor
                 if frame_processor is not None:
-                    # Get stats directly from the frame processor
-                    return frame_processor.get_stats()
+                    # Get stats directly from the frame processor with device info
+                    stats = frame_processor.get_stats()
+                    # Log device info for troubleshooting
+                    if 'device' in stats:
+                        print(f"Inference device: {stats['device']}")
+                    return stats
                 return self.last_stats
         
         # Register API routes

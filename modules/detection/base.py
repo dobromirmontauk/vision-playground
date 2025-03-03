@@ -57,3 +57,7 @@ class ObjectDetector(abc.ABC):
     def get_info(self) -> Dict[str, Any]:
         """Return information about the detector."""
         pass
+        
+    def get_device_info(self) -> str:
+        """Return information about the inference device being used."""
+        return "cpu"  # Default implementation returns CPU

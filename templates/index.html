@@ -64,6 +64,21 @@
         .stats {
             margin: 0;
             padding: 0.5rem;
+            transition: background-color 0.5s ease;
+        }
+        .stats.mps-device {
+            background-color: rgba(0, 150, 30, 0.8) !important;
+            color: white;
+            font-weight: bold;
+        }
+        .stats.cuda-device {
+            background-color: rgba(76, 0, 153, 0.8) !important;
+            color: white;
+            font-weight: bold;
+        }
+        .stats.cpu-device {
+            background-color: rgba(153, 76, 0, 0.8) !important;
+            color: white;
         }
         .notification {
             position: fixed;
@@ -225,7 +240,22 @@
                 fetch('/api/stats')
                     .then(response => response.json())
                     .then(data => {
-                        statsDisplay.textContent = `FPS: ${data.fps} | Processing Time: ${data.median_time} ms (median), ${data.max_time} ms (max)`;
+                        // Format the device info more nicely
+                        const deviceInfo = data.device || "unknown";
+                        const formattedDevice = deviceInfo.toUpperCase();
+                        
+                        // Add device info to stats display
+                        statsDisplay.textContent = `Device: ${formattedDevice} | FPS: ${data.fps} | Processing Time: ${data.median_time} ms (median), ${data.max_time} ms (max)`;
+                        
+                        // Add device-specific class for styling
+                        statsDisplay.className = 'stats';
+                        if (deviceInfo.includes('mps')) {
+                            statsDisplay.classList.add('mps-device');
+                        } else if (deviceInfo.includes('cuda')) {
+                            statsDisplay.classList.add('cuda-device');
+                        } else {
+                            statsDisplay.classList.add('cpu-device');
+                        }
                     })
                     .catch(error => {
                         console.error('Error fetching stats:', error);
@@ -713,8 +743,23 @@
                     })
                     .then(data => {
                         console.log('Stats data received:', data);
+                        // Format the device info more nicely
+                        const deviceInfo = data.device || "unknown";
+                        const formattedDevice = deviceInfo.toUpperCase();
+                        
                         // Update the stats display with the data from the API
-                        statsDisplay.textContent = `FPS: ${data.fps} | Processing Time: ${data.median_time} ms (median), ${data.max_time} ms (max)`;
+                        statsDisplay.textContent = `Device: ${formattedDevice} | FPS: ${data.fps} | Processing Time: ${data.median_time} ms (median), ${data.max_time} ms (max)`;
+                        
+                        // Add device-specific class for styling
+                        statsDisplay.className = 'stats';
+                        if (deviceInfo.includes('mps')) {
+                            statsDisplay.classList.add('mps-device');
+                        } else if (deviceInfo.includes('cuda')) {
+                            statsDisplay.classList.add('cuda-device');
+                        } else {
+                            statsDisplay.classList.add('cpu-device');
+                        }
+                        
                         // Add a data attribute to help with testing
                         statsDisplay.setAttribute('data-stats-loaded', 'true');
                     })

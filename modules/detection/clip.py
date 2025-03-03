@@ -275,3 +275,21 @@ class CLIPDetector(ObjectDetector):
             "confidence_threshold": self.confidence_threshold,
             "categories": len(self.categories)
         }
+        
+    def get_device_info(self) -> str:
+        """Return information about the inference device being used."""
+        if hasattr(self, 'device'):
+            # Return the device we're actually using
+            return str(self.device)
+        
+        # Fallback to checking what's available
+        try:
+            import torch
+            if torch.cuda.is_available():
+                return "cuda"
+            elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+                return "mps"
+        except (ImportError, AttributeError):
+            pass
+            
+        return "cpu"
